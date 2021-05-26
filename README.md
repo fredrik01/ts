@@ -31,7 +31,7 @@ Show timestamps and time between them
 	2021-05-26 20:08:23         1m25s         3m57s
 	Now                        10m23s        14m20s
 
-Reset (TODO)
+Reset
 
 	ts reset
 	ts reset baby

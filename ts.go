@@ -47,6 +47,8 @@ func runCommand(command string, name string) {
 		save(name)
 	case "show":
 		show(name)
+	case "reset":
+		reset(name)
 	default:
 		flag.Usage()
 		os.Exit(1)
@@ -74,7 +76,45 @@ func show(name string) {
 	}
 }
 
+func reset(name string) {
+	filename := getFilename(name)
+	if _, err := os.Stat(filename); err == nil {
+		fmt.Printf("Reset ")
+		fmt.Printf(name)
+		fmt.Printf("? (y/n) ")
+		ok := askForConfirmation()
+
+		if ok {
+			e := os.Remove(filename)
+			if e != nil {
+				log.Fatal(e)
+			}
+			fmt.Println("Done")
+		} else {
+			fmt.Println("Aborted")
+		}
+	} else {
+		fmt.Println("This stopwatch is not running")
+	}
+}
+
 // Helper functions
+
+func askForConfirmation() bool {
+	var response string
+
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	switch strings.ToLower(response) {
+	case "y", "yes":
+		return true
+	default:
+		return false
+	}
+}
 
 func getFilename(name string) string {
 	var sb strings.Builder
