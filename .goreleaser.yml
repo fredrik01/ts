@@ -1,0 +1,11 @@
+project_name: ts
+builds:
+  - env: [CGO_ENABLED=0]
+    goos:
+      - linux
+      - windows
+      - darwin
+      - android
+    goarch:
+      - amd64
+      - arm64
