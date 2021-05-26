@@ -65,11 +65,12 @@ func save(name string) {
 }
 
 func show(name string) {
-	if _, err := os.Stat(".timestamps"); err == nil {
+	filename := getFilename(name)
+	if _, err := os.Stat(filename); err == nil {
 		printHeaders()
-		readFile(getFilename(name))
+		readFile(filename)
 	} else {
-		fmt.Println("Timer is not started")
+		fmt.Println("This stopwatch is not running")
 	}
 }
 
