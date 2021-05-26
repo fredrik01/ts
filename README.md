@@ -1,5 +1,7 @@
 # timestamp-stopwatch
 
+There is also a version written in shell script: https://github.com/fredrik01/ts-shell.git
+
 Save timestamps to lists (stopwatches). Show time between each timestamp and time between each timestamp and the first one.
 
 Made to keep track of:
