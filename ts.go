@@ -55,12 +55,12 @@ func save() {
 	fmt.Println("Timestamp saved")
 	t := time.Now()
 	fmt.Println(t.Format(layoutDateTime))
-	appendToFile("timestamps", t.Format(layoutDateTime))
+	appendToFile(".timestamps", t.Format(layoutDateTime))
 }
 
 func show() {
 	printHeaders()
-	readFile("timestamps")
+	readFile(".timestamps")
 }
 
 // Helper functions
