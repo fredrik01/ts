@@ -59,8 +59,12 @@ func save() {
 }
 
 func show() {
-	printHeaders()
-	readFile(".timestamps")
+	if _, err := os.Stat(".timestamps"); err == nil {
+		printHeaders()
+		readFile(".timestamps")
+	} else {
+		fmt.Println("Timer is not started")
+	}
 }
 
 // Helper functions
