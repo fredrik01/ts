@@ -34,15 +34,19 @@ func main() {
 	}
 
 	command := flag.Arg(0)
-	runCommand(command)
+	name := flag.Arg(1)
+	if name == "" {
+		name = "default"
+	}
+	runCommand(command, name)
 }
 
-func runCommand(command string) {
+func runCommand(command string, name string) {
 	switch command {
 	case "save":
-		save()
+		save(name)
 	case "show":
-		show()
+		show(name)
 	default:
 		flag.Usage()
 		os.Exit(1)
@@ -51,23 +55,32 @@ func runCommand(command string) {
 
 // Commands
 
-func save() {
+func save(name string) {
 	fmt.Println("Timestamp saved")
+	fmt.Printf(name)
+	fmt.Printf(": ")
 	t := time.Now()
-	fmt.Println(t.Format(layoutDateTime))
-	appendToFile(".timestamps", t.Format(layoutDateTime))
+	fmt.Printf(t.Format(layoutDateTime))
+	appendToFile(getFilename(name), t.Format(layoutDateTime))
 }
 
-func show() {
+func show(name string) {
 	if _, err := os.Stat(".timestamps"); err == nil {
 		printHeaders()
-		readFile(".timestamps")
+		readFile(getFilename(name))
 	} else {
 		fmt.Println("Timer is not started")
 	}
 }
 
 // Helper functions
+
+func getFilename(name string) string {
+	var sb strings.Builder
+	sb.WriteString(".timestamps-")
+	sb.WriteString(name)
+	return sb.String()
+}
 
 func appendToFile(file string, data string) {
 	// https://golang.org/pkg/os/#example_OpenFile_append
