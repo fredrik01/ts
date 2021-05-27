@@ -15,3 +15,5 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
+    files:
+      - ts.zsh

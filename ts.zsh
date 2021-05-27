@@ -1,0 +1,2 @@
+# Setup ts
+path+=~/.ts
