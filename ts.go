@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"strings"
 	"time"
 )
@@ -66,11 +67,11 @@ func save(name string) {
 	fmt.Printf(": ")
 	t := time.Now()
 	fmt.Printf(t.Format(layoutDateTime))
-	appendToFile(getFilename(name), t.Format(layoutDateTime))
+	appendToFile(getFilePath(name), t.Format(layoutDateTime))
 }
 
 func show(name string) {
-	filename := getFilename(name)
+	filename := getFilePath(name)
 	if _, err := os.Stat(filename); err == nil {
 		printHeaders()
 		readFile(filename)
@@ -80,7 +81,7 @@ func show(name string) {
 }
 
 func reset(name string) {
-	filename := getFilename(name)
+	filename := getFilePath(name)
 	if _, err := os.Stat(filename); err == nil {
 		fmt.Printf("Reset ")
 		fmt.Printf(name)
@@ -133,8 +134,19 @@ func askForConfirmation() bool {
 	}
 }
 
-func getFilename(name string) string {
+func getCurrentDir() string {
+	e, err := os.Executable()
+	if err != nil {
+		fmt.Println(err)
+		return ""
+	}
+	return path.Dir(e)
+}
+
+func getFilePath(name string) string {
 	var sb strings.Builder
+	sb.WriteString(getCurrentDir())
+	sb.WriteString("/")
 	sb.WriteString(".timestamps-")
 	sb.WriteString(name)
 	return sb.String()
