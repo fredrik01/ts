@@ -109,20 +109,30 @@ func reset(name string) {
 }
 
 func list(name string) {
-	files, err := ioutil.ReadDir(getCurrentDir())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, file := range files {
-		filename := file.Name()
+	for _, filename := range getTimestampFiles() {
 		if strings.Contains(filename, ".timestamps-") {
-			fmt.Println(filename[12:len(filename)])
+			fmt.Println(filename[12:])
 		}
 	}
 }
 
 // Helper functions
+
+func getTimestampFiles() []string {
+	files, err := ioutil.ReadDir(getCurrentDir())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	var timestampFiles []string
+	for _, file := range files {
+		filename := file.Name()
+		if strings.Contains(filename, ".timestamps-") {
+			timestampFiles = append(timestampFiles, filename)
+		}
+	}
+	return timestampFiles
+}
 
 func askForConfirmation() bool {
 	var response string
