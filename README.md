@@ -58,6 +58,10 @@ Add this to `.zshrc`
 
 	[ -f ~/.ts/ts.zsh ] && source ~/.ts/ts.zsh
 
+For Termux skip the thing above and do this instead
+
+	ln -s $HOME/.ts/ts $PREFIX/bin/ts
+
 ## Update
 
 	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_linux_amd64.tar.gz -o ts.tar.gz
