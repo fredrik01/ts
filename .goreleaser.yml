@@ -10,3 +10,8 @@ builds:
       - amd64
       - arm64
     binary: ts
+archives:
+  - name_template: "{{.Binary}}_{{.Os}}_{{.Arch}}"
+    format_overrides:
+      - goos: windows
+        format: zip
