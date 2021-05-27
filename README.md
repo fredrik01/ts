@@ -31,6 +31,10 @@ Show timestamps and time between them
 	2021-05-26 20:08:23         1m25s         3m57s
 	Now                        10m23s        14m20s
 
+Show timestamps from all stopwatches in the same list (TODO)
+
+	ts show-all
+
 Reset
 
 	ts reset
@@ -49,7 +53,7 @@ Cat log file (TODO)
 
 ### MacOS
 
-	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
+	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
 	mkdir ~/.ts
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
@@ -60,7 +64,7 @@ Add this to `.zshrc`
 
 ### Android / Termux
 
-	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
+	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
 	mkdir ~/.ts
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
@@ -73,13 +77,13 @@ And then
 
 ### MacOS
 
-	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
+	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
 
 ### Android / Termux
 
-	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
+	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
 
