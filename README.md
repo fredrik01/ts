@@ -47,9 +47,9 @@ Cat log file (TODO)
 
 ## Installation
 
-Download binary from the release page.
+MacOS
 
-	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_linux_amd64.tar.gz -o ts.tar.gz
+	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
 	mkdir ~/.ts
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
@@ -64,6 +64,8 @@ For Termux skip the thing above and do this instead
 
 ## Update
 
-	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_linux_amd64.tar.gz -o ts.tar.gz
+MacOS
+
+	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
