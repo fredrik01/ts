@@ -103,7 +103,7 @@ func reset(name string) {
 }
 
 func list(name string) {
-	files, err := ioutil.ReadDir("./")
+	files, err := ioutil.ReadDir(getCurrentDir())
 	if err != nil {
 		log.Fatal(err)
 	}
