@@ -54,6 +54,13 @@ MacOS
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
 
+Android
+
+	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
+	mkdir ~/.ts
+	tar -xvf ts.tar.gz -C ~/.ts
+	rm ts.tar.gz
+
 Add this to `.zshrc`
 
 	[ -f ~/.ts/ts.zsh ] && source ~/.ts/ts.zsh
@@ -69,3 +76,10 @@ MacOS
 	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
 	tar -xvf ts.tar.gz -C ~/.ts
 	rm ts.tar.gz
+
+Android
+
+	curl -L https://github.com/fredrik01/ts-go/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
+	tar -xvf ts.tar.gz -C ~/.ts
+	rm ts.tar.gz
+
