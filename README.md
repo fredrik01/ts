@@ -36,7 +36,7 @@ Reset
 	ts reset
 	ts reset baby
 
-List stopwatches (TODO)
+List stopwatches
 
 	ts list
 
