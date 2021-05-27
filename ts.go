@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strings"
@@ -49,6 +50,8 @@ func runCommand(command string, name string) {
 		show(name)
 	case "reset":
 		reset(name)
+	case "list":
+		list(name)
 	default:
 		flag.Usage()
 		os.Exit(1)
@@ -95,6 +98,20 @@ func reset(name string) {
 		}
 	} else {
 		fmt.Println("This stopwatch is not running")
+	}
+}
+
+func list(name string) {
+	files, err := ioutil.ReadDir("./")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, file := range files {
+		filename := file.Name()
+		if strings.Contains(filename, ".timestamps-") {
+			fmt.Println(filename[12:len(filename)])
+		}
 	}
 }
 
