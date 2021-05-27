@@ -49,6 +49,8 @@ func runCommand(command string, name string) {
 		save(name)
 	case "show":
 		show(name)
+	case "show-all":
+		showAll()
 	case "reset":
 		reset(name)
 	case "list":
@@ -74,10 +76,14 @@ func show(name string) {
 	filename := getFilePath(name)
 	if _, err := os.Stat(filename); err == nil {
 		printHeaders()
-		readFile(filename)
+		readAndPrintFile(filename)
 	} else {
 		fmt.Println("This stopwatch is not running")
 	}
+}
+
+func showAll() {
+	//
 }
 
 func reset(name string) {
@@ -184,7 +190,7 @@ func printHeaders() {
 	fmt.Printf("\n")
 }
 
-func readFile(filePath string) {
+func readAndPrintFile(filePath string) {
 	// https://stackoverflow.com/a/36111861
 	file, err := os.Open(filePath)
 	if err != nil {

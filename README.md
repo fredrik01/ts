@@ -39,6 +39,7 @@ Reset
 
 	ts reset
 	ts reset baby
+	ts reset-all (TODO)
 
 List stopwatches
 
