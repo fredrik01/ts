@@ -8,16 +8,26 @@ import (
 	"log"
 	"os"
 	"path"
+	"sort"
 	"strings"
 	"time"
 )
 
 const (
-	layoutDateTime = "2006-01-02 15:04:05"
-	column1Width   = 19
-	column2Width   = 14
-	column3Width   = 14
+	layoutDateTime    = "2006-01-02 15:04:05"
+	column1Width      = 19
+	column2Width      = 14
+	column3Width      = 14
+	column1WidthNamed = 19
+	column2WidthNamed = 19
+	column3WidthNamed = 14
+	column4WidthNamed = 14
 )
+
+type nameAndDate struct {
+	name string
+	date time.Time
+}
 
 var usage = `Usage: ts <command>
 
@@ -49,8 +59,8 @@ func runCommand(command string, name string) {
 		save(name)
 	case "show":
 		show(name)
-	case "show-all":
-		showAll()
+	case "combine":
+		combine()
 	case "reset":
 		reset(name)
 	case "list":
@@ -83,8 +93,21 @@ func show(name string) {
 	}
 }
 
-func showAll() {
-	//
+func combine() {
+	// fmt.Println(getTimestampFiles())
+	var allTimestamps []nameAndDate
+	for _, filename := range getTimestampFiles() {
+		filePath := getFilePathForFilename(filename)
+		timestamps := readFile(filePath)
+		nameAndDates := convertToNameAndDateSlice(getNameFromFilename(filename), timestamps)
+		allTimestamps = append(allTimestamps, nameAndDates...)
+	}
+	// fmt.Println(allTimestamps)
+	sort.Slice(allTimestamps, func(i, j int) bool {
+		return allTimestamps[i].date.Before(allTimestamps[j].date)
+	})
+	printHeadersNamed()
+	printNameAndDates(allTimestamps)
 }
 
 func reset(name string) {
@@ -112,12 +135,25 @@ func reset(name string) {
 func list(name string) {
 	for _, filename := range getTimestampFiles() {
 		if strings.Contains(filename, ".timestamps-") {
-			fmt.Println(filename[12:])
+			fmt.Println(getNameFromFilename(filename))
 		}
 	}
 }
 
 // Helper functions
+
+func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDate {
+	var nameAndDates []nameAndDate
+	for _, dateTime := range timestamps {
+		nameAndDates = append(nameAndDates, nameAndDate{name: name, date: dateTime})
+		// fmt.Println(nameAndDate{name: name, date: dateTime}.date)
+	}
+	return nameAndDates
+}
+
+func getNameFromFilename(filename string) string {
+	return filename[12:]
+}
 
 func getTimestampFiles() []string {
 	files, err := ioutil.ReadDir(getCurrentDir())
@@ -160,6 +196,14 @@ func getCurrentDir() string {
 	return path.Dir(e)
 }
 
+func getFilePathForFilename(filename string) string {
+	var sb strings.Builder
+	sb.WriteString(getCurrentDir())
+	sb.WriteString("/")
+	sb.WriteString(filename)
+	return sb.String()
+}
+
 func getFilePath(name string) string {
 	var sb strings.Builder
 	sb.WriteString(getCurrentDir())
@@ -198,6 +242,14 @@ func printHeaders() {
 	fmt.Printf("%-*s", column1Width, "Timestamp")
 	fmt.Printf("%*s", column2Width, "Since prev")
 	fmt.Printf("%*s", column3Width, "Since first")
+	fmt.Printf("\n")
+}
+
+func printHeadersNamed() {
+	fmt.Printf("%-*s", column1WidthNamed, "Name")
+	fmt.Printf("%-*s", column2WidthNamed, "Timestamp")
+	fmt.Printf("%*s", column3WidthNamed, "Since prev")
+	fmt.Printf("%*s", column4WidthNamed, "Since first")
 	fmt.Printf("\n")
 }
 
@@ -262,5 +314,44 @@ func printTimestamps(timestamps []time.Time) {
 		fmt.Printf("%-*s", column1Width, "Now")
 		fmt.Printf("%*s", column2Width, now.Sub(prevLineTime).String())
 		fmt.Printf("%*s", column3Width, now.Sub(firstLineTime).String())
+	}
+}
+
+func printNameAndDates(timestamps []nameAndDate) {
+	prevLineTimeExists := false
+	var prevLineTime nameAndDate
+	var firstLineTime nameAndDate
+
+	for _, lineTime := range timestamps {
+		dateString := lineTime.date.Format(layoutDateTime)
+		fmt.Printf("%-*s", column1WidthNamed, lineTime.name)
+		fmt.Printf("%*s", column2WidthNamed, dateString)
+
+		// TODO: Rename to isFirst?
+		if prevLineTimeExists {
+			diffSincePrev := lineTime.date.Sub(prevLineTime.date)
+			fmt.Printf("%*s", column3WidthNamed, diffSincePrev.String())
+			fmt.Printf("%*s", column4WidthNamed, lineTime.date.Sub(firstLineTime.date).String())
+		} else {
+			firstLineTime = lineTime
+		}
+
+		fmt.Printf("\n")
+
+		prevLineTimeExists = true
+		prevLineTime = lineTime
+	}
+
+	if prevLineTimeExists {
+		now := time.Now()
+		nowString := now.Format(layoutDateTime)
+		now, err := time.Parse(layoutDateTime, nowString)
+		if err != nil {
+			fmt.Println(err)
+		}
+		fmt.Printf("%*s", column1WidthNamed, "")
+		fmt.Printf("%-*s", column2WidthNamed, "Now")
+		fmt.Printf("%*s", column3WidthNamed, now.Sub(prevLineTime.date).String())
+		fmt.Printf("%*s", column4WidthNamed, now.Sub(firstLineTime.date).String())
 	}
 }
