@@ -73,10 +73,11 @@ func save(name string) {
 }
 
 func show(name string) {
-	filename := getFilePath(name)
-	if _, err := os.Stat(filename); err == nil {
+	filePath := getFilePath(name)
+	if _, err := os.Stat(filePath); err == nil {
 		printHeaders()
-		readAndPrintFile(filename)
+		timestamps := readFile(filePath)
+		printTimestamps(timestamps)
 	} else {
 		fmt.Println("This stopwatch is not running")
 	}
@@ -200,7 +201,7 @@ func printHeaders() {
 	fmt.Printf("\n")
 }
 
-func readAndPrintFile(filePath string) {
+func readFile(filePath string) []time.Time {
 	// https://stackoverflow.com/a/36111861
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -213,19 +214,27 @@ func readAndPrintFile(filePath string) {
 	}()
 
 	scanner := bufio.NewScanner(file)
-
-	prevLineTimeExists := false
-	prevLineTime := time.Now()
-	firstLineTime := time.Now()
+	var timestamps []time.Time
 
 	for scanner.Scan() {
 		dateString := scanner.Text()
-		lineTime, err := time.Parse(layoutDateTime, dateString)
+		dateTime, err := time.Parse(layoutDateTime, dateString)
 
 		if err != nil {
 			fmt.Println(err)
 		}
+		timestamps = append(timestamps, dateTime)
+	}
+	return timestamps
+}
 
+func printTimestamps(timestamps []time.Time) {
+	prevLineTimeExists := false
+	prevLineTime := time.Now()
+	firstLineTime := time.Now()
+
+	for _, lineTime := range timestamps {
+		dateString := lineTime.Format(layoutDateTime)
 		fmt.Printf("%*s", column1Width, dateString)
 
 		// TODO: Rename to isFirst?
@@ -246,7 +255,7 @@ func readAndPrintFile(filePath string) {
 	if prevLineTimeExists {
 		now := time.Now()
 		nowString := now.Format(layoutDateTime)
-		now, err = time.Parse(layoutDateTime, nowString)
+		now, err := time.Parse(layoutDateTime, nowString)
 		if err != nil {
 			fmt.Println(err)
 		}
