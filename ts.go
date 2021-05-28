@@ -94,7 +94,6 @@ func show(name string) {
 }
 
 func combine() {
-	// fmt.Println(getTimestampFiles())
 	var allTimestamps []nameAndDate
 	for _, filename := range getTimestampFiles() {
 		filePath := getFilePathForFilename(filename)
@@ -102,7 +101,6 @@ func combine() {
 		nameAndDates := convertToNameAndDateSlice(getNameFromFilename(filename), timestamps)
 		allTimestamps = append(allTimestamps, nameAndDates...)
 	}
-	// fmt.Println(allTimestamps)
 	sort.Slice(allTimestamps, func(i, j int) bool {
 		return allTimestamps[i].date.Before(allTimestamps[j].date)
 	})
@@ -146,7 +144,6 @@ func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDat
 	var nameAndDates []nameAndDate
 	for _, dateTime := range timestamps {
 		nameAndDates = append(nameAndDates, nameAndDate{name: name, date: dateTime})
-		// fmt.Println(nameAndDate{name: name, date: dateTime}.date)
 	}
 	return nameAndDates
 }
