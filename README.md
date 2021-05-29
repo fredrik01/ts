@@ -55,36 +55,17 @@ Cat log file (TODO)
 ### MacOS
 
 	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
-	mkdir ~/.ts
-	tar -xvf ts.tar.gz -C ~/.ts
+	mkdir /tmp/ts
+	tar -xvf ts.tar.gz -C /tmp/ts
+	mv /tmp/ts/ts /usr/local/bin/ts
 	rm ts.tar.gz
-
-Add this to `.zshrc`
-
-	[ -f ~/.ts/ts.zsh ] && source ~/.ts/ts.zsh
+	rm -r /tmp/ts
 
 ### Android / Termux
 
 	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
-	mkdir ~/.ts
-	tar -xvf ts.tar.gz -C ~/.ts
+	mkdir /tmp/ts
+	tar -xvf ts.tar.gz -C /tmp/ts
+	mv /tmp/ts/ts $PREFIX/bin/ts 
 	rm ts.tar.gz
-
-And then
-
-	ln -s $HOME/.ts/ts $PREFIX/bin/ts
-
-## Update
-
-### MacOS
-
-	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_darwin_amd64.tar.gz -o ts.tar.gz
-	tar -xvf ts.tar.gz -C ~/.ts
-	rm ts.tar.gz
-
-### Android / Termux
-
-	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
-	tar -xvf ts.tar.gz -C ~/.ts
-	rm ts.tar.gz
-
+	rm -r /tmp/ts
