@@ -13,15 +13,15 @@ import (
 )
 
 const (
-	storageFolder     = ".config/ts"
-	layoutDateTime    = "2006-01-02 15:04:05"
-	column1Width      = 19
-	column2Width      = 14
-	column3Width      = 14
-	column1WidthNamed = 19
-	column2WidthNamed = 19
-	column3WidthNamed = 14
-	column4WidthNamed = 14
+	storageFolder        = ".config/ts"
+	layoutDateTime       = "2006-01-02 15:04:05"
+	column1Width         = 19
+	column2Width         = 14
+	column3Width         = 14
+	column1MinWidthNamed = 6
+	column2WidthNamed    = 19
+	column3WidthNamed    = 14
+	column4WidthNamed    = 14
 )
 
 type nameAndDate struct {
@@ -124,7 +124,7 @@ func combine() {
 	sort.Slice(allTimestamps, func(i, j int) bool {
 		return allTimestamps[i].date.Before(allTimestamps[j].date)
 	})
-	printHeadersNamed()
+	printHeadersNamed(allTimestamps)
 	printNameAndDates(allTimestamps)
 }
 
@@ -253,7 +253,8 @@ func printHeaders() {
 	fmt.Printf("\n")
 }
 
-func printHeadersNamed() {
+func printHeadersNamed(timestamps []nameAndDate) {
+	column1WidthNamed := getColumn1WidthNamedLength(timestamps)
 	fmt.Printf("%-*s", column1WidthNamed, "Name")
 	fmt.Printf("%-*s", column2WidthNamed, "Timestamp")
 	fmt.Printf("%*s", column3WidthNamed, "Since prev")
@@ -325,7 +326,26 @@ func printTimestamps(timestamps []time.Time) {
 	}
 }
 
+func getLengthOfLongestName(timestamps []nameAndDate) int {
+	longest := 0
+	for _, timestamp := range timestamps {
+		if len(timestamp.name) > longest {
+			longest = len(timestamp.name)
+		}
+	}
+	return longest
+}
+
+func getColumn1WidthNamedLength(timestamps []nameAndDate) int {
+	column1Length := getLengthOfLongestName(timestamps) + 2
+	if column1MinWidthNamed > column1Length {
+		column1Length = column1MinWidthNamed
+	}
+	return column1Length
+}
+
 func printNameAndDates(timestamps []nameAndDate) {
+	column1WidthNamed := getColumn1WidthNamedLength(timestamps)
 	prevLineTimeExists := false
 	var prevLineTime nameAndDate
 	var firstLineTime nameAndDate
