@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path"
 	"sort"
 	"strings"
 	"time"
 )
 
 const (
+	storageFolder     = ".config/ts"
 	layoutDateTime    = "2006-01-02 15:04:05"
 	column1Width      = 19
 	column2Width      = 14
@@ -50,7 +50,27 @@ func main() {
 	if name == "" {
 		name = "default"
 	}
+	setupStorage()
 	runCommand(command, name)
+}
+
+func setupStorage() {
+	storagePath := getStoragePath()
+	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+		os.Mkdir(storagePath, 0700)
+	}
+}
+
+func getStoragePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var storage strings.Builder
+	storage.WriteString(home)
+	storage.WriteString("/")
+	storage.WriteString(storageFolder)
+	return storage.String()
 }
 
 func runCommand(command string, name string) {
@@ -153,7 +173,7 @@ func getNameFromFilename(filename string) string {
 }
 
 func getTimestampFiles() []string {
-	files, err := ioutil.ReadDir(getCurrentDir())
+	files, err := ioutil.ReadDir(getStoragePath())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -184,18 +204,9 @@ func askForConfirmation() bool {
 	}
 }
 
-func getCurrentDir() string {
-	e, err := os.Executable()
-	if err != nil {
-		fmt.Println(err)
-		return ""
-	}
-	return path.Dir(e)
-}
-
 func getFilePathForFilename(filename string) string {
 	var sb strings.Builder
-	sb.WriteString(getCurrentDir())
+	sb.WriteString(getStoragePath())
 	sb.WriteString("/")
 	sb.WriteString(filename)
 	return sb.String()
@@ -203,7 +214,7 @@ func getFilePathForFilename(filename string) string {
 
 func getFilePath(name string) string {
 	var sb strings.Builder
-	sb.WriteString(getCurrentDir())
+	sb.WriteString(getStoragePath())
 	sb.WriteString("/")
 	sb.WriteString(".timestamps-")
 	sb.WriteString(name)
