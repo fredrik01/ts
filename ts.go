@@ -32,7 +32,7 @@ type nameAndDate struct {
 var usage = `Usage: ts [command] [argument]
 
   Commands:
-    save		Save to default stopwatch or to a named one (ts save mystopwatch)
+    add			Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
     show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
     reset		Reset default stopwatch or a named one (ts reset mystopwatch)
     list		List stopwatches
@@ -79,8 +79,8 @@ func getStoragePath() string {
 
 func runCommand(command string, name string) {
 	switch command {
-	case "save":
-		save(name)
+	case "add":
+		add(name)
 	case "show":
 		show(name)
 	case "combine":
@@ -97,8 +97,8 @@ func runCommand(command string, name string) {
 
 // Commands
 
-func save(name string) {
-	fmt.Println("Timestamp saved")
+func add(name string) {
+	fmt.Println("Timestamp added")
 	fmt.Printf(name)
 	fmt.Printf(": ")
 	t := time.Now()
