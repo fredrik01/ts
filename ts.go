@@ -281,7 +281,7 @@ func printHeaders() {
 	fmt.Printf("%-*s", column1Width, "Timestamp")
 	fmt.Printf("%*s", column2Width, "Since prev")
 	fmt.Printf("%*s", column3Width, "Since first")
-	fmt.Printf("\n")
+	fmt.Println()
 }
 
 func printHeadersNamed(timestamps []nameAndDate) {
@@ -290,7 +290,7 @@ func printHeadersNamed(timestamps []nameAndDate) {
 	fmt.Printf("%-*s", column2WidthNamed, "Timestamp")
 	fmt.Printf("%*s", column3WidthNamed, "Since prev")
 	fmt.Printf("%*s", column4WidthNamed, "Since first")
-	fmt.Printf("\n")
+	fmt.Println()
 }
 
 func readFile(filePath string) []time.Time {
