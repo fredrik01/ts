@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	version              = "0.1.3"
+	version              = "0.1.5"
 	storageFolder        = ".config/ts"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	column1Width         = 19
