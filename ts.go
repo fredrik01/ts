@@ -16,8 +16,8 @@ const (
 	storageFolder        = ".config/ts"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	column1Width         = 19
-	column2Width         = 14
-	column3Width         = 14
+	column2Width         = 12
+	column3Width         = 13
 	column1MinWidthNamed = 6
 	column2WidthNamed    = 19
 	column3WidthNamed    = 12
