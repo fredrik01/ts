@@ -109,9 +109,8 @@ func add(name string) {
 	fmt.Printf(name)
 	fmt.Printf(": ")
 	t := time.Now()
-	// fmt.Println(t.Format(layoutDateTime))
-	fmt.Println(t.String())
-	appendToFile(getFilePath(name), t.Format(layoutDateTime))
+	fmt.Println(t.Local().Format(layoutDateTime))
+	appendToFile(getFilePath(name), t.Local().Format(layoutDateTime))
 }
 
 func show(name string) {
