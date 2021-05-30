@@ -355,6 +355,7 @@ func printTimestamps(timestamps []time.Time) {
 		fmt.Printf("%*s", column2Width, now.Sub(prevLineTime).String())
 		fmt.Printf("%*s", column3Width, now.Sub(firstLineTime).String())
 	}
+	fmt.Println()
 }
 
 func getLengthOfLongestName(timestamps []nameAndDate) int {
@@ -413,4 +414,5 @@ func printNameAndDates(timestamps []nameAndDate) {
 		fmt.Printf("%*s", column3WidthNamed, now.Sub(prevLineTime.date).String())
 		fmt.Printf("%*s", column4WidthNamed, now.Sub(firstLineTime.date).String())
 	}
+	fmt.Println()
 }
