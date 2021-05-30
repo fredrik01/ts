@@ -64,8 +64,8 @@ Cat log file (TODO)
 ### Android / Termux
 
 	curl -L https://github.com/fredrik01/ts/releases/latest/download/ts_android_arm64.tar.gz -o ts.tar.gz
-	mkdir /tmp/ts
-	tar -xvf ts.tar.gz -C /tmp/ts
-	mv /tmp/ts/ts $PREFIX/bin/ts 
+	mkdir ts
+	tar -xvf ts.tar.gz -C ts
+	mv ts/ts $PREFIX/bin/ts 
 	rm ts.tar.gz
-	rm -r /tmp/ts
+	rm -r ts
