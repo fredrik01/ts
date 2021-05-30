@@ -20,8 +20,8 @@ const (
 	column3Width         = 14
 	column1MinWidthNamed = 6
 	column2WidthNamed    = 19
-	column3WidthNamed    = 14
-	column4WidthNamed    = 14
+	column3WidthNamed    = 12
+	column4WidthNamed    = 13
 )
 
 type nameAndDate struct {
