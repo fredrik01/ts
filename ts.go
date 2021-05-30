@@ -13,6 +13,7 @@ import (
 )
 
 const (
+	version              = "0.1.3"
 	storageFolder        = ".config/ts"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	column1Width         = 19
@@ -38,6 +39,7 @@ var usage = `Usage: ts [command] [argument]
     reset-all		Reset all stopwatches
     list		List stopwatches
     combine		Show all stopwatches in one sorted list
+	  version		Print version
 `
 
 func main() {
@@ -92,6 +94,8 @@ func runCommand(command string, name string) {
 		resetAll()
 	case "list":
 		list(name)
+	case "version":
+		fmt.Println(version)
 	default:
 		flag.Usage()
 		os.Exit(1)
