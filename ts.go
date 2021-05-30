@@ -29,11 +29,15 @@ type nameAndDate struct {
 	date time.Time
 }
 
-var usage = `Usage: ts <command>
+var usage = `Usage: ts [command] [argument]
 
-Example:
-
-ts save`
+  Commands:
+    save		Save to default stopwatch or to a named one (ts save mystopwatch)
+    show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
+    reset		Reset default stopwatch or a named one (ts reset mystopwatch)
+    list		List stopwatches
+    combine		Show all stopwatches in one sorted list
+`
 
 func main() {
 	flag.Usage = func() {
@@ -42,7 +46,7 @@ func main() {
 	flag.Parse()
 	if flag.NArg() < 1 {
 		flag.Usage()
-		os.Exit(1)
+		return
 	}
 
 	command := flag.Arg(0)
