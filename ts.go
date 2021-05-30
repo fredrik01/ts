@@ -35,6 +35,7 @@ var usage = `Usage: ts [command] [argument]
     add			Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
     show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
     reset		Reset default stopwatch or a named one (ts reset mystopwatch)
+    reset-all		Reset all stopwatches
     list		List stopwatches
     combine		Show all stopwatches in one sorted list
 `
@@ -87,6 +88,8 @@ func runCommand(command string, name string) {
 		combine()
 	case "reset":
 		reset(name)
+	case "reset-all":
+		resetAll()
 	case "list":
 		list(name)
 	default:
@@ -151,6 +154,26 @@ func reset(name string) {
 		}
 	} else {
 		fmt.Println("This stopwatch is not running")
+	}
+}
+
+func resetAll() {
+	fmt.Printf("Reset all? (y/n) ")
+	ok := askForConfirmation()
+
+	if ok {
+		for _, filename := range getTimestampFiles() {
+			if strings.Contains(filename, ".timestamps-") {
+				path := getFilePathForFilename(filename)
+				e := os.Remove(path)
+				if e != nil {
+					log.Fatal(e)
+				}
+			}
+		}
+		fmt.Println("Done")
+	} else {
+		fmt.Println("Aborted")
 	}
 }
 
