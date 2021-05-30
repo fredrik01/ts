@@ -271,12 +271,6 @@ func appendToFile(file string, data string) {
 	}
 }
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
 func printHeaders() {
 	fmt.Printf("%-*s", column1Width, "Timestamp")
 	fmt.Printf("%*s", column2Width, "Since prev")
