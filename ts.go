@@ -110,7 +110,7 @@ func add(name string) {
 	fmt.Printf(": ")
 	t := time.Now()
 	fmt.Println(t.Local().Format(layoutDateTime))
-	appendToFile(getFilePath(name), t.Local().Format(layoutDateTime))
+	appendToFile(getFilePath(name), t.UTC().Format(layoutDateTime))
 }
 
 func show(name string) {
@@ -326,7 +326,7 @@ func printTimestamps(timestamps []time.Time) {
 	firstLineTime := time.Now()
 
 	for _, lineTime := range timestamps {
-		dateString := lineTime.Format(layoutDateTime)
+		dateString := lineTime.Local().Format(layoutDateTime)
 		fmt.Printf("%*s", column1Width, dateString)
 
 		// TODO: Rename to isFirst?
@@ -345,7 +345,7 @@ func printTimestamps(timestamps []time.Time) {
 	}
 
 	if prevLineTimeExists {
-		now := time.Now()
+		now := time.Now().UTC()
 		nowString := now.Format(layoutDateTime)
 		now, err := time.Parse(layoutDateTime, nowString)
 		if err != nil {
