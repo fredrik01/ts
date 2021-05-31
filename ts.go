@@ -40,8 +40,9 @@ var usage = `Usage: ts [command] [argument]
     reset-all		Reset all stopwatches
     list		List stopwatches
     combine		Show all stopwatches in one sorted list
-	  version		Print version
-	  set-timezone	Set timezone (ts set-timezone "America/New_York")
+    version		Print version
+    set-timezone	Set timezone (ts set-timezone "America/New_York")
+    reset-timezone	Reset previous timezone settings and use the local timezone
 `
 
 func main() {
@@ -60,7 +61,6 @@ func main() {
 		argument = "default"
 	}
 	setupStorage()
-	readLocation()
 	runCommand(command, argument)
 }
 
@@ -80,6 +80,8 @@ func runCommand(command string, argument string) {
 		list(argument)
 	case "set-timezone":
 		setTimezone(argument)
+	case "reset-timezone":
+		deleteTimezoneFileIfExists()
 	case "version":
 		fmt.Println(version)
 	default:
@@ -233,18 +235,23 @@ func getTimezoneFilePath() string {
 	return getStoragePathForFile(timezoneFilename)
 }
 
-func setTimezone(location string) {
+func deleteTimezoneFileIfExists() {
 	file := getTimezoneFilePath()
 
 	if _, err := os.Stat(file); err == nil {
-		// Remove old file
 		e := os.Remove(file)
 		if e != nil {
 			log.Fatal(e)
 		}
 	}
+}
+
+func setTimezone(location string) {
+	// Remove old file
+	deleteTimezoneFileIfExists()
 
 	// Create location file
+	file := getTimezoneFilePath()
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatal(err)
