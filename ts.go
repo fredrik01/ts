@@ -15,6 +15,7 @@ import (
 const (
 	version              = "0.1.5"
 	storageFolder        = ".config/ts"
+	timezoneFilename     = "tz"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	column1Width         = 19
 	column2Width         = 12
@@ -40,6 +41,7 @@ var usage = `Usage: ts [command] [argument]
     list		List stopwatches
     combine		Show all stopwatches in one sorted list
 	  version		Print version
+	  set-timezone	Set timezone (ts set-timezone "America/New_York")
 `
 
 func main() {
@@ -53,47 +55,31 @@ func main() {
 	}
 
 	command := flag.Arg(0)
-	name := flag.Arg(1)
-	if name == "" {
-		name = "default"
+	argument := flag.Arg(1)
+	if argument == "" {
+		argument = "default"
 	}
 	setupStorage()
-	runCommand(command, name)
+	readLocation()
+	runCommand(command, argument)
 }
 
-func setupStorage() {
-	storagePath := getStoragePath()
-	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
-		os.Mkdir(storagePath, 0700)
-	}
-}
-
-func getStoragePath() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var storage strings.Builder
-	storage.WriteString(home)
-	storage.WriteString("/")
-	storage.WriteString(storageFolder)
-	return storage.String()
-}
-
-func runCommand(command string, name string) {
+func runCommand(command string, argument string) {
 	switch command {
 	case "add":
-		add(name)
+		add(argument)
 	case "show":
-		show(name)
+		show(argument)
 	case "combine":
 		combine()
 	case "reset":
-		reset(name)
+		reset(argument)
 	case "reset-all":
 		resetAll()
 	case "list":
-		list(name)
+		list(argument)
+	case "set-timezone":
+		setTimezone(argument)
 	case "version":
 		fmt.Println(version)
 	default:
@@ -190,6 +176,84 @@ func list(name string) {
 }
 
 // Helper functions
+
+func setupStorage() {
+	storagePath := getStoragePath()
+	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
+		os.Mkdir(storagePath, 0700)
+	}
+}
+
+func getStoragePath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatal(err)
+	}
+	var storage strings.Builder
+	storage.WriteString(home)
+	storage.WriteString("/")
+	storage.WriteString(storageFolder)
+	return storage.String()
+}
+
+func getStoragePathForFile(filename string) string {
+	var sb strings.Builder
+	sb.WriteString(getStoragePath())
+	sb.WriteString("/")
+	sb.WriteString(filename)
+	return sb.String()
+}
+
+func readLocation() string {
+	file := getStoragePathForFile(timezoneFilename)
+	content, err := ioutil.ReadFile(file)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return string(content)
+}
+
+func inTimezone(timestamp time.Time) time.Time {
+	if timezoneFileExists() {
+		location, _ := time.LoadLocation(readLocation())
+		return timestamp.In(location)
+	}
+	return timestamp.Local()
+}
+
+func timezoneFileExists() bool {
+	file := getTimezoneFilePath()
+	if _, err := os.Stat(file); err == nil {
+		return true
+	}
+	return false
+}
+
+func getTimezoneFilePath() string {
+	return getStoragePathForFile(timezoneFilename)
+}
+
+func setTimezone(location string) {
+	file := getTimezoneFilePath()
+
+	if _, err := os.Stat(file); err == nil {
+		// Remove old file
+		e := os.Remove(file)
+		if e != nil {
+			log.Fatal(e)
+		}
+	}
+
+	// Create location file
+	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := f.Write([]byte(location)); err != nil {
+		f.Close() // ignore error; Write error takes precedence
+		log.Fatal(err)
+	}
+}
 
 func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDate {
 	var nameAndDates []nameAndDate
@@ -320,7 +384,8 @@ func printTimestamps(timestamps []time.Time) {
 	firstLineTime := time.Now()
 
 	for _, lineTime := range timestamps {
-		dateString := lineTime.Local().Format(layoutDateTime)
+		lineTime = inTimezone(lineTime)
+		dateString := lineTime.Format(layoutDateTime)
 		fmt.Printf("%*s", column1Width, dateString)
 
 		// TODO: Rename to isFirst?
@@ -345,6 +410,7 @@ func printTimestamps(timestamps []time.Time) {
 		if err != nil {
 			fmt.Println(err)
 		}
+		now = inTimezone(now)
 		fmt.Printf("%-*s", column1Width, "Now")
 		fmt.Printf("%*s", column2Width, now.Sub(prevLineTime).String())
 		fmt.Printf("%*s", column3Width, now.Sub(firstLineTime).String())
@@ -377,6 +443,7 @@ func printNameAndDates(timestamps []nameAndDate) {
 	var firstLineTime nameAndDate
 
 	for _, lineTime := range timestamps {
+		lineTime.date = inTimezone(lineTime.date)
 		dateString := lineTime.date.Format(layoutDateTime)
 		fmt.Printf("%-*s", column1WidthNamed, lineTime.name)
 		fmt.Printf("%*s", column2WidthNamed, dateString)
@@ -397,12 +464,13 @@ func printNameAndDates(timestamps []nameAndDate) {
 	}
 
 	if prevLineTimeExists {
-		now := time.Now()
+		now := time.Now().UTC()
 		nowString := now.Format(layoutDateTime)
 		now, err := time.Parse(layoutDateTime, nowString)
 		if err != nil {
 			fmt.Println(err)
 		}
+		now = inTimezone(now)
 		fmt.Printf("%*s", column1WidthNamed, "")
 		fmt.Printf("%-*s", column2WidthNamed, "Now")
 		fmt.Printf("%*s", column3WidthNamed, now.Sub(prevLineTime.date).String())
