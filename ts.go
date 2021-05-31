@@ -97,9 +97,9 @@ func add(name string) {
 	fmt.Println("Timestamp added")
 	fmt.Printf(name)
 	fmt.Printf(": ")
-	t := time.Now()
-	fmt.Println(t.Local().Format(layoutDateTime))
-	appendToFile(getFilePath(name), t.UTC().Format(layoutDateTime))
+	t := time.Now().UTC()
+	fmt.Println(inTimezone(t).Format(layoutDateTime))
+	appendToFile(getFilePath(name), t.Format(layoutDateTime))
 }
 
 func show(name string) {
