@@ -79,6 +79,7 @@ func runCommand(command string, argument string) {
 	case "list":
 		list(argument)
 	case "set-timezone":
+		// TODO: Don't pass default name into this function
 		setTimezone(argument)
 	case "reset-timezone":
 		deleteTimezoneFileIfExists()
