@@ -13,13 +13,13 @@ Made to keep track of:
 
 Add timestamp to default or named stopwatch
 
-	ts save
-	ts save baby
+	ts add
+	ts add sleep
 
 Show timestamps and time between them
 
 	ts show
-	ts show baby
+	ts show sleep
 
 	# Example output:
 
@@ -31,24 +31,17 @@ Show timestamps and time between them
 	2021-05-26 20:08:23         1m25s         3m57s
 	Now                        10m23s        14m20s
 
-Show timestamps from all stopwatches in the same list (TODO)
+Show timestamps from all stopwatches in the same list
 
-	ts show-all
+	ts combine
 
 Reset
 
 	ts reset
-	ts reset baby
-	ts reset-all (TODO)
+	ts reset sleep
+	ts reset-all
 
-List stopwatches
-
-	ts list
-
-Cat log file (TODO)
-
-	ts raw
-	ts raw baby
+Run `ts` for all commands.
 
 ## Installation
 
