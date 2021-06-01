@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	version              = "0.2.1"
+	version              = "0.3.0"
 	storageFolder        = ".config/ts"
 	timezoneFilename     = "tz"
 	layoutDateTime       = "2006-01-02 15:04:05"
@@ -37,6 +37,7 @@ var usage = `Usage: ts [command] [argument]
     add			Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
     show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
     reset		Reset default stopwatch or a named one (ts reset mystopwatch)
+    rename		Rename a stopwatch (ts rename oldname newname)
     reset-all		Reset all stopwatches
     list		List stopwatches
     combine		Show all stopwatches in one sorted list
@@ -55,16 +56,15 @@ func main() {
 		return
 	}
 
+	setupStorage()
+
+	// TODO: Clean up this mess
 	command := flag.Arg(0)
 	argument := flag.Arg(1)
 	if argument == "" {
 		argument = "default"
 	}
-	setupStorage()
-	runCommand(command, argument)
-}
 
-func runCommand(command string, argument string) {
 	switch command {
 	case "add":
 		add(argument)
@@ -78,6 +78,8 @@ func runCommand(command string, argument string) {
 		resetAll()
 	case "list":
 		list(argument)
+	case "rename":
+		rename(flag.Arg(1), flag.Arg(2))
 	case "set-timezone":
 		// TODO: Don't pass default name into this function
 		setTimezone(argument)
@@ -148,6 +150,23 @@ func reset(name string) {
 	} else {
 		fmt.Println("This stopwatch is not running")
 	}
+}
+
+func rename(oldName string, newName string) {
+	oldPath := getFilePath(oldName)
+	if !fileExists(oldPath) {
+		fmt.Println("This stopwatch does not exist")
+		return
+	}
+
+	newPath := getFilePath(newName)
+	if fileExists(newPath) {
+		fmt.Println("This stopwatch already exists")
+		return
+	}
+
+	os.Rename(oldPath, newPath)
+	fmt.Println("Done")
 }
 
 func resetAll() {
@@ -222,6 +241,13 @@ func inTimezone(timestamp time.Time) time.Time {
 		return timestamp.In(location)
 	}
 	return timestamp.Local()
+}
+
+func fileExists(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	}
+	return false
 }
 
 func timezoneFileExists() bool {
