@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	version              = "0.3.0"
+	version              = "0.4.0"
 	storageFolder        = ".config/ts"
 	timezoneFilename     = "tz"
 	layoutDateTime       = "2006-01-02 15:04:05"
@@ -38,9 +38,10 @@ var usage = `Usage: ts [command] [argument]
     show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
     reset		Reset default stopwatch or a named one (ts reset mystopwatch)
     rename		Rename a stopwatch (ts rename oldname newname)
-    reset-all		Reset all stopwatches
     list		List stopwatches
     combine		Show all stopwatches in one sorted list
+    all			Print all stopwatches
+    reset-all		Reset all stopwatches
     version		Print version
     set-timezone	Set timezone (ts set-timezone "America/New_York")
     reset-timezone	Reset previous timezone settings and use the local timezone
@@ -72,6 +73,8 @@ func main() {
 		show(argument)
 	case "combine":
 		combine()
+	case "all":
+		all()
 	case "reset":
 		reset(argument)
 	case "reset-all":
@@ -128,6 +131,16 @@ func combine() {
 	})
 	printHeadersNamed(allTimestamps)
 	printNameAndDates(allTimestamps)
+}
+
+func all() {
+	for _, filename := range getTimestampFiles() {
+		name := getNameFromFilename(filename)
+		fmt.Println(name)
+		fmt.Println("--------------------------------------------")
+		show(name)
+		fmt.Println()
+	}
 }
 
 func reset(name string) {
