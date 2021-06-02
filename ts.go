@@ -70,8 +70,7 @@ func main() {
 	case "show":
 		show(nameOrDefault(arguments))
 	case "combine":
-		// combine(arguments)
-		combine()
+		combine(arguments)
 	case "all":
 		all()
 	case "reset":
@@ -124,12 +123,16 @@ func show(name string) {
 	}
 }
 
-func combine() {
+func combine(arguments []string) {
 	var allTimestamps []nameAndDate
 	for _, filename := range getTimestampFiles() {
+		name := getNameFromFilename(filename)
+		if len(arguments) > 0 && !containsPart(arguments, name) {
+			continue
+		}
 		filePath := getFilePathForFilename(filename)
 		timestamps := readFile(filePath)
-		nameAndDates := convertToNameAndDateSlice(getNameFromFilename(filename), timestamps)
+		nameAndDates := convertToNameAndDateSlice(name, timestamps)
 		allTimestamps = append(allTimestamps, nameAndDates...)
 	}
 	sort.Slice(allTimestamps, func(i, j int) bool {
@@ -217,6 +220,24 @@ func list(name string) {
 }
 
 // Helper functions
+
+func containsExact(values []string, pattern string) bool {
+	for _, value := range values {
+		if v == str {
+			return true
+		}
+	}
+	return false
+}
+
+func containsPart(values []string, pattern string) bool {
+	for _, value := range values {
+		if strings.Contains(pattern, value) {
+			return true
+		}
+	}
+	return false
+}
 
 func setupStorage() {
 	storagePath := getStoragePath()
