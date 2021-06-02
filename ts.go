@@ -59,33 +59,31 @@ func main() {
 
 	setupStorage()
 
-	// TODO: Clean up this mess
-	command := flag.Arg(0)
-	argument := flag.Arg(1)
-	if argument == "" {
-		argument = "default"
-	}
+	flagArgs := flag.Args()
+	var command string
+	var arguments []string
+	command, arguments = flagArgs[0], flagArgs[1:]
 
 	switch command {
 	case "add":
-		add(argument)
+		add(nameOrDefault(arguments))
 	case "show":
-		show(argument)
+		show(nameOrDefault(arguments))
 	case "combine":
+		// combine(arguments)
 		combine()
 	case "all":
 		all()
 	case "reset":
-		reset(argument)
+		reset(nameOrDefault(arguments))
 	case "reset-all":
 		resetAll()
 	case "list":
-		list(argument)
+		list(nameOrDefault(arguments))
 	case "rename":
 		rename(flag.Arg(1), flag.Arg(2))
 	case "set-timezone":
-		// TODO: Don't pass default name into this function
-		setTimezone(argument)
+		setTimezone(arguments[0])
 	case "reset-timezone":
 		deleteTimezoneFileIfExists()
 	case "version":
@@ -94,6 +92,14 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
+}
+
+// First argument should contain the name, otherwise return default name
+func nameOrDefault(arguments []string) string {
+	if len(arguments) == 0 {
+		return "default"
+	}
+	return arguments[0]
 }
 
 // Commands
