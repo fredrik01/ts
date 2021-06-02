@@ -221,18 +221,18 @@ func list(name string) {
 
 // Helper functions
 
-func containsExact(values []string, pattern string) bool {
+func containsExact(values []string, str string) bool {
 	for _, value := range values {
-		if v == str {
+		if value == str {
 			return true
 		}
 	}
 	return false
 }
 
-func containsPart(values []string, pattern string) bool {
+func containsPart(values []string, str string) bool {
 	for _, value := range values {
-		if strings.Contains(pattern, value) {
+		if strings.Contains(str, value) {
 			return true
 		}
 	}
