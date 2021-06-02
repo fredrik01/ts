@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	version              = "0.4.0"
+	version              = "0.5.0"
 	storageFolder        = ".config/ts"
 	timezoneFilename     = "tz"
 	layoutDateTime       = "2006-01-02 15:04:05"
@@ -35,56 +35,87 @@ var usage = `Usage: ts [command] [argument]
 
   Commands:
     add			Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
+
     show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
+    		-all	Print all stopwatches
+
     reset		Reset default stopwatch or a named one (ts reset mystopwatch)
+    		-all	Reset all stopwatches
+
     rename		Rename a stopwatch (ts rename oldname newname)
+
     list		List stopwatches
-    combine		Show all stopwatches in one sorted list
-    all			Print all stopwatches
-    reset-all		Reset all stopwatches
+
+    combine		Show all stopwatches in one sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts combine mystop something)
+    		-exact	Use exact matching for additional arguments
+
+    timezone		Set timezone (ts timezone "America/New_York")
+    		-reset	Reset previous timezone settings and use the local timezone
+
     version		Print version
-    set-timezone	Set timezone (ts set-timezone "America/New_York")
-    reset-timezone	Reset previous timezone settings and use the local timezone
 `
 
 func main() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "%s\n", usage)
 	}
-	flag.Parse()
-	if flag.NArg() < 1 {
+
+	addCmd := flag.NewFlagSet("add", flag.ExitOnError)
+
+	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
+	showAllFlag := showCmd.Bool("all", false, "all")
+
+	combineCmd := flag.NewFlagSet("combine", flag.ExitOnError)
+	exactFlag := combineCmd.Bool("exact", false, "exact")
+
+	resetCmd := flag.NewFlagSet("reset", flag.ExitOnError)
+	resetAllFlag := resetCmd.Bool("all", false, "all")
+
+	renameCmd := flag.NewFlagSet("rename", flag.ExitOnError)
+
+	timezoneCmd := flag.NewFlagSet("timezone", flag.ExitOnError)
+	timezoneResetFlag := timezoneCmd.Bool("reset", false, "reset")
+
+	if len(os.Args) < 2 {
 		flag.Usage()
-		return
+		os.Exit(1)
 	}
 
 	setupStorage()
 
-	flagArgs := flag.Args()
-	var command string
-	var arguments []string
-	command, arguments = flagArgs[0], flagArgs[1:]
-
-	switch command {
+	switch os.Args[1] {
 	case "add":
-		add(nameOrDefault(arguments))
+		addCmd.Parse(os.Args[2:])
+		add(nameOrDefault(addCmd.Arg(0)))
 	case "show":
-		show(nameOrDefault(arguments))
+		showCmd.Parse(os.Args[2:])
+		if *showAllFlag {
+			all()
+		} else {
+			show(nameOrDefault(addCmd.Arg(0)))
+		}
 	case "combine":
-		combine(arguments)
-	case "all":
-		all()
+		combineCmd.Parse(os.Args[2:])
+		combine(combineCmd.Args(), *exactFlag)
 	case "reset":
-		reset(nameOrDefault(arguments))
-	case "reset-all":
-		resetAll()
+		resetCmd.Parse(os.Args[2:])
+		if *resetAllFlag {
+			resetAll()
+		} else {
+			reset(nameOrDefault(resetCmd.Arg(0)))
+		}
 	case "list":
-		list(nameOrDefault(arguments))
+		list()
 	case "rename":
-		rename(flag.Arg(1), flag.Arg(2))
-	case "set-timezone":
-		setTimezone(arguments[0])
-	case "reset-timezone":
-		deleteTimezoneFileIfExists()
+		renameCmd.Parse(os.Args[2:])
+		rename(renameCmd.Arg(0), renameCmd.Arg(1))
+	case "timezone":
+		timezoneCmd.Parse(os.Args[2:])
+		if *timezoneResetFlag {
+			deleteTimezoneFileIfExists()
+		} else {
+			setTimezone(timezoneCmd.Arg(0))
+		}
 	case "version":
 		fmt.Println(version)
 	default:
@@ -93,12 +124,12 @@ func main() {
 	}
 }
 
-// First argument should contain the name, otherwise return default name
-func nameOrDefault(arguments []string) string {
-	if len(arguments) == 0 {
+// Return default name if the name variable is empty
+func nameOrDefault(name string) string {
+	if name == "" {
 		return "default"
 	}
-	return arguments[0]
+	return name
 }
 
 // Commands
@@ -123,12 +154,16 @@ func show(name string) {
 	}
 }
 
-func combine(arguments []string) {
+func combine(arguments []string, exactMatch bool) {
 	var allTimestamps []nameAndDate
 	for _, filename := range getTimestampFiles() {
 		name := getNameFromFilename(filename)
-		if len(arguments) > 0 && !containsPart(arguments, name) {
-			continue
+		if len(arguments) > 0 {
+			if exactMatch && !containsExact(arguments, name) {
+				continue
+			} else if !exactMatch && !contains(arguments, name) {
+				continue
+			}
 		}
 		filePath := getFilePathForFilename(filename)
 		timestamps := readFile(filePath)
@@ -211,7 +246,7 @@ func resetAll() {
 	}
 }
 
-func list(name string) {
+func list() {
 	for _, filename := range getTimestampFiles() {
 		if strings.Contains(filename, ".timestamps-") {
 			fmt.Println(getNameFromFilename(filename))
@@ -230,7 +265,7 @@ func containsExact(values []string, str string) bool {
 	return false
 }
 
-func containsPart(values []string, str string) bool {
+func contains(values []string, str string) bool {
 	for _, value := range values {
 		if strings.Contains(str, value) {
 			return true
