@@ -31,17 +31,21 @@ Show timestamps and time between them
 	2021-05-26 20:08:23         1m25s         3m57s
 	Now                        10m23s        14m20s
 
-Show timestamps from all stopwatches in the same list
+Show timestamps from all or some stopwatches in the same list
 
-	ts combine
+	ts show -combine
+
+Print all lists
+
+	ts show -all
 
 Reset
 
 	ts reset
 	ts reset sleep
-	ts reset-all
+	ts reset -all
 
-Run `ts` for all commands.
+Run `ts` for all commands and options
 
 ## Installation
 

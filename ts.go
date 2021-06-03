@@ -35,27 +35,26 @@ type nameAndDate struct {
 var usage = `Usage: ts [command] [argument]
 
   Commands:
-    add			Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
+    add		Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
 
-    show		Show default stopwatch timestamps or a named one (ts show mystopwatch)
-    		-all	Print all stopwatches
+    show	Show default stopwatch timestamps or a named one (ts show mystopwatch)
+    		-all		Print all stopwatches
+    		-combine	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show -combine mystop)
+    		-combine-exact	Use exact matching for additional arguments when combining
 
-    reset		Reset default stopwatch or a named one (ts reset mystopwatch)
-    		-all	Reset all stopwatches
+    reset	Reset default stopwatch or a named one (ts reset mystopwatch)
+    		-all		Reset all stopwatches
 
-    rename		Rename a stopwatch (ts rename oldname newname)
+    rename	Rename a stopwatch (ts rename oldname newname)
 
-    edit		Edit a stopwatch using the editor in your $EDITOR environment variable
+    edit	Edit a stopwatch using the editor in your $EDITOR environment variable
 
-    list		List stopwatches
+    list	List stopwatches
 
-    combine		Show all stopwatches in one sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts combine mystop something)
-    		-exact	Use exact matching for additional arguments
+    timezone	Set timezone (ts timezone "America/New_York")
+    		-reset		Reset previous timezone settings and use the local timezone
 
-    timezone		Set timezone (ts timezone "America/New_York")
-    		-reset	Reset previous timezone settings and use the local timezone
-
-    version		Print version
+    version	Print version
 `
 
 func main() {
@@ -67,9 +66,8 @@ func main() {
 
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
 	showAllFlag := showCmd.Bool("all", false, "all")
-
-	combineCmd := flag.NewFlagSet("combine", flag.ExitOnError)
-	exactFlag := combineCmd.Bool("exact", false, "exact")
+	showCombineFlag := showCmd.Bool("combine", false, "combine")
+	showCombineExactFlag := showCmd.Bool("combine-exact", false, "combine-exact")
 
 	resetCmd := flag.NewFlagSet("reset", flag.ExitOnError)
 	resetAllFlag := resetCmd.Bool("all", false, "all")
@@ -96,12 +94,13 @@ func main() {
 		showCmd.Parse(os.Args[2:])
 		if *showAllFlag {
 			all()
+		} else if *showCombineExactFlag {
+			combine(showCmd.Args(), true)
+		} else if *showCombineFlag {
+			combine(showCmd.Args(), false)
 		} else {
 			show(nameOrDefault(showCmd.Arg(0)))
 		}
-	case "combine":
-		combineCmd.Parse(os.Args[2:])
-		combine(combineCmd.Args(), *exactFlag)
 	case "reset":
 		resetCmd.Parse(os.Args[2:])
 		if *resetAllFlag {
