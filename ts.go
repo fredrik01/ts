@@ -92,7 +92,7 @@ func main() {
 		if *showAllFlag {
 			all()
 		} else {
-			show(nameOrDefault(addCmd.Arg(0)))
+			show(nameOrDefault(showCmd.Arg(0)))
 		}
 	case "combine":
 		combineCmd.Parse(os.Args[2:])
