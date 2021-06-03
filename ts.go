@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	version              = "0.5.0"
+	version              = "0.6.1"
 	storageFolder        = ".config/ts"
 	timezoneFilename     = "tz"
 	layoutDateTime       = "2006-01-02 15:04:05"
