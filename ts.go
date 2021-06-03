@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"sort"
 	"strings"
 	"time"
@@ -44,6 +45,8 @@ var usage = `Usage: ts [command] [argument]
 
     rename		Rename a stopwatch (ts rename oldname newname)
 
+    edit		Edit a stopwatch using the editor in your $EDITOR environment variable
+
     list		List stopwatches
 
     combine		Show all stopwatches in one sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts combine mystop something)
@@ -72,6 +75,8 @@ func main() {
 	resetAllFlag := resetCmd.Bool("all", false, "all")
 
 	renameCmd := flag.NewFlagSet("rename", flag.ExitOnError)
+
+	editCmd := flag.NewFlagSet("edit", flag.ExitOnError)
 
 	timezoneCmd := flag.NewFlagSet("timezone", flag.ExitOnError)
 	timezoneResetFlag := timezoneCmd.Bool("reset", false, "reset")
@@ -109,6 +114,9 @@ func main() {
 	case "rename":
 		renameCmd.Parse(os.Args[2:])
 		rename(renameCmd.Arg(0), renameCmd.Arg(1))
+	case "edit":
+		editCmd.Parse(os.Args[2:])
+		edit(nameOrDefault(editCmd.Arg(0)))
 	case "timezone":
 		timezoneCmd.Parse(os.Args[2:])
 		if *timezoneResetFlag {
@@ -224,6 +232,15 @@ func rename(oldName string, newName string) {
 
 	os.Rename(oldPath, newPath)
 	fmt.Println("Done")
+}
+
+func edit(name string) {
+	path := getFilePath(name)
+	cmd := exec.Command(os.Getenv("EDITOR"), path)
+	cmd.Stdout = os.Stdout
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+	cmd.Run()
 }
 
 func resetAll() {
