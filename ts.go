@@ -47,7 +47,7 @@ var usage = `Usage: ts [command] [argument]
 
     rename	Rename a stopwatch (ts rename oldname newname)
 
-    edit	Edit a stopwatch using the editor in your $EDITOR environment variable
+    edit	Edit a stopwatch using the editor in your $EDITOR environment variable. Timestamps are stored in UTC.
 
     list	List stopwatches
 
