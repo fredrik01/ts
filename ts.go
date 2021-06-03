@@ -32,13 +32,24 @@ type nameAndDate struct {
 	date time.Time
 }
 
-var usage = `Usage: ts [command] [argument]
+type tsConfig struct {
+	firstDiff bool
+	nowDiff   bool
+}
+
+var config = tsConfig{
+	firstDiff: false,
+	nowDiff:   false,
+}
+
+var usage = `Usage: ts [command] [flags] [argument]
 
   Commands:
     add		Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
 
     show	Show default stopwatch timestamps or a named one (ts show mystopwatch)
     		-all		Print all stopwatches
+    		-first-diff	Show "since" first column
     		-combine	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show -combine mystop)
     		-combine-exact	Use exact matching for additional arguments when combining
 
@@ -66,6 +77,7 @@ func main() {
 
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
 	showAllFlag := showCmd.Bool("all", false, "all")
+	showFirstDiffFlag := showCmd.Bool("first-diff", false, "first-diff")
 	showCombineFlag := showCmd.Bool("combine", false, "combine")
 	showCombineExactFlag := showCmd.Bool("combine-exact", false, "combine-exact")
 
@@ -92,6 +104,7 @@ func main() {
 		add(nameOrDefault(addCmd.Arg(0)))
 	case "show":
 		showCmd.Parse(os.Args[2:])
+		config.firstDiff = *showFirstDiffFlag
 		if *showAllFlag {
 			all()
 		} else if *showCombineExactFlag {
@@ -463,7 +476,9 @@ func appendToFile(file string, data string) {
 func printHeaders() {
 	fmt.Printf("%-*s", column1Width, "Timestamp")
 	fmt.Printf("%*s", column2Width, "Since prev")
-	fmt.Printf("%*s", column3Width, "Since first")
+	if config.firstDiff {
+		fmt.Printf("%*s", column3Width, "Since first")
+	}
 	fmt.Println()
 }
 
@@ -472,7 +487,9 @@ func printHeadersNamed(timestamps []nameAndDate) {
 	fmt.Printf("%-*s", column1WidthNamed, "Name")
 	fmt.Printf("%-*s", column2WidthNamed, "Timestamp")
 	fmt.Printf("%*s", column3WidthNamed, "Since prev")
-	fmt.Printf("%*s", column4WidthNamed, "Since first")
+	if config.firstDiff {
+		fmt.Printf("%*s", column4WidthNamed, "Since first")
+	}
 	fmt.Println()
 }
 
@@ -517,7 +534,9 @@ func printTimestamps(timestamps []time.Time) {
 		if prevLineTimeExists {
 			diffSincePrev := lineTime.Sub(prevLineTime)
 			fmt.Printf("%*s", column2Width, diffSincePrev.String())
-			fmt.Printf("%*s", column3Width, lineTime.Sub(firstLineTime).String())
+			if config.firstDiff {
+				fmt.Printf("%*s", column3Width, lineTime.Sub(firstLineTime).String())
+			}
 		} else {
 			firstLineTime = lineTime
 		}
@@ -538,7 +557,9 @@ func printTimestamps(timestamps []time.Time) {
 		now = inTimezone(now)
 		fmt.Printf("%-*s", column1Width, "Now")
 		fmt.Printf("%*s", column2Width, now.Sub(prevLineTime).String())
-		fmt.Printf("%*s", column3Width, now.Sub(firstLineTime).String())
+		if config.firstDiff {
+			fmt.Printf("%*s", column3Width, now.Sub(firstLineTime).String())
+		}
 	}
 	fmt.Println()
 }
@@ -577,7 +598,9 @@ func printNameAndDates(timestamps []nameAndDate) {
 		if prevLineTimeExists {
 			diffSincePrev := lineTime.date.Sub(prevLineTime.date)
 			fmt.Printf("%*s", column3WidthNamed, diffSincePrev.String())
-			fmt.Printf("%*s", column4WidthNamed, lineTime.date.Sub(firstLineTime.date).String())
+			if config.firstDiff {
+				fmt.Printf("%*s", column4WidthNamed, lineTime.date.Sub(firstLineTime.date).String())
+			}
 		} else {
 			firstLineTime = lineTime
 		}
@@ -599,7 +622,9 @@ func printNameAndDates(timestamps []nameAndDate) {
 		fmt.Printf("%*s", column1WidthNamed, "")
 		fmt.Printf("%-*s", column2WidthNamed, "Now")
 		fmt.Printf("%*s", column3WidthNamed, now.Sub(prevLineTime.date).String())
-		fmt.Printf("%*s", column4WidthNamed, now.Sub(firstLineTime.date).String())
+		if config.firstDiff {
+			fmt.Printf("%*s", column4WidthNamed, now.Sub(firstLineTime.date).String())
+		}
 	}
 	fmt.Println()
 }
