@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	version              = "0.6.1"
+	version              = "0.7.0"
 	storageFolder        = ".config/ts"
 	timezoneFilename     = "tz"
 	layoutDateTime       = "2006-01-02 15:04:05"
@@ -22,6 +22,7 @@ const (
 	timestampColumnWidth = 19
 	prevColumnWidth      = 12
 	firstDiffColumnWidth = 13
+	nowDiffColumnWidth   = 11
 )
 
 type nameAndDate struct {
@@ -47,7 +48,7 @@ var usage = `Usage: ts [command] [flags] [argument]
     show	Show default stopwatch timestamps or a named one (ts show mystopwatch)
     		-all		Print all stopwatches
     		-first-diff	Show "since first" column
-    		-now-diff	Show "since" column, diffs against current time
+    		-now-diff	Show "since now" column, diffs against current time
     		-combine	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show -combine mystop)
     		-combine-exact	Use exact matching for additional arguments when combining
 
@@ -76,6 +77,7 @@ func main() {
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
 	showAllFlag := showCmd.Bool("all", false, "all")
 	showFirstDiffFlag := showCmd.Bool("first-diff", false, "first-diff")
+	showNowDiffFlag := showCmd.Bool("now-diff", false, "now-diff")
 	showCombineFlag := showCmd.Bool("combine", false, "combine")
 	showCombineExactFlag := showCmd.Bool("combine-exact", false, "combine-exact")
 
@@ -102,7 +104,10 @@ func main() {
 		add(nameOrDefault(addCmd.Arg(0)))
 	case "show":
 		showCmd.Parse(os.Args[2:])
+
 		config.firstDiff = *showFirstDiffFlag
+		config.nowDiff = *showNowDiffFlag
+
 		if *showAllFlag {
 			all()
 		} else if *showCombineExactFlag {
@@ -199,7 +204,7 @@ func all() {
 	for _, filename := range getTimestampFiles() {
 		name := getNameFromFilename(filename)
 		fmt.Println(name)
-		fmt.Println("--------------------------------------------")
+		fmt.Println("-------------------")
 		show(name)
 		fmt.Println()
 	}
@@ -471,22 +476,29 @@ func appendToFile(file string, data string) {
 	}
 }
 
+// TODO: Merge this and printHeadersNamed
 func printHeaders() {
 	fmt.Printf("%-*s", timestampColumnWidth, "Timestamp")
 	fmt.Printf("%*s", prevColumnWidth, "Since prev")
 	if config.firstDiff {
 		fmt.Printf("%*s", firstDiffColumnWidth, "Since first")
 	}
+	if config.nowDiff {
+		fmt.Printf("%*s", nowDiffColumnWidth, "Since now")
+	}
 	fmt.Println()
 }
 
 func printHeadersNamed(timestamps []nameAndDate) {
-	column1WidthNamed := getColumn1WidthNamedLength(timestamps)
+	column1WidthNamed := getNameColumnLength(timestamps)
 	fmt.Printf("%-*s", column1WidthNamed, "Name")
 	fmt.Printf("%-*s", timestampColumnWidth, "Timestamp")
 	fmt.Printf("%*s", prevColumnWidth, "Since prev")
 	if config.firstDiff {
 		fmt.Printf("%*s", firstDiffColumnWidth, "Since first")
+	}
+	if config.nowDiff {
+		fmt.Printf("%*s", nowDiffColumnWidth, "Since now")
 	}
 	fmt.Println()
 }
@@ -518,10 +530,39 @@ func readFile(filePath string) []time.Time {
 	return timestamps
 }
 
+func nowTime() time.Time {
+	now := time.Now().UTC()
+	nowString := now.Format(layoutDateTime)
+	now, err := time.Parse(layoutDateTime, nowString)
+	if err != nil {
+		fmt.Println(err)
+	}
+	return now
+}
+
+func getLengthOfLongestName(timestamps []nameAndDate) int {
+	longest := 0
+	for _, timestamp := range timestamps {
+		if len(timestamp.name) > longest {
+			longest = len(timestamp.name)
+		}
+	}
+	return longest
+}
+
+func getNameColumnLength(timestamps []nameAndDate) int {
+	column1Length := getLengthOfLongestName(timestamps) + 2
+	if minNameColumnWidth > column1Length {
+		column1Length = minNameColumnWidth
+	}
+	return column1Length
+}
+
 func printTimestamps(timestamps []time.Time) {
 	prevLineTimeExists := false
 	prevLineTime := time.Now()
 	firstLineTime := time.Now()
+	now := inTimezone(nowTime())
 
 	for _, lineTime := range timestamps {
 		lineTime = inTimezone(lineTime)
@@ -536,7 +577,12 @@ func printTimestamps(timestamps []time.Time) {
 				fmt.Printf("%*s", firstDiffColumnWidth, lineTime.Sub(firstLineTime).String())
 			}
 		} else {
+			fmt.Printf("%*s", prevColumnWidth, "")
 			firstLineTime = lineTime
+		}
+
+		if config.nowDiff {
+			fmt.Printf("%*s", nowDiffColumnWidth, now.Sub(lineTime).String())
 		}
 
 		fmt.Printf("\n")
@@ -546,13 +592,6 @@ func printTimestamps(timestamps []time.Time) {
 	}
 
 	if prevLineTimeExists {
-		now := time.Now().UTC()
-		nowString := now.Format(layoutDateTime)
-		now, err := time.Parse(layoutDateTime, nowString)
-		if err != nil {
-			fmt.Println(err)
-		}
-		now = inTimezone(now)
 		fmt.Printf("%-*s", timestampColumnWidth, "Now")
 		fmt.Printf("%*s", prevColumnWidth, now.Sub(prevLineTime).String())
 		if config.firstDiff {
@@ -562,29 +601,12 @@ func printTimestamps(timestamps []time.Time) {
 	fmt.Println()
 }
 
-func getLengthOfLongestName(timestamps []nameAndDate) int {
-	longest := 0
-	for _, timestamp := range timestamps {
-		if len(timestamp.name) > longest {
-			longest = len(timestamp.name)
-		}
-	}
-	return longest
-}
-
-func getColumn1WidthNamedLength(timestamps []nameAndDate) int {
-	column1Length := getLengthOfLongestName(timestamps) + 2
-	if minNameColumnWidth > column1Length {
-		column1Length = minNameColumnWidth
-	}
-	return column1Length
-}
-
 func printNameAndDates(timestamps []nameAndDate) {
-	column1WidthNamed := getColumn1WidthNamedLength(timestamps)
+	column1WidthNamed := getNameColumnLength(timestamps)
 	prevLineTimeExists := false
 	var prevLineTime nameAndDate
 	var firstLineTime nameAndDate
+	now := inTimezone(nowTime())
 
 	for _, lineTime := range timestamps {
 		lineTime.date = inTimezone(lineTime.date)
@@ -601,6 +623,14 @@ func printNameAndDates(timestamps []nameAndDate) {
 			}
 		} else {
 			firstLineTime = lineTime
+			fmt.Printf("%*s", prevColumnWidth, "")
+			if config.firstDiff {
+				fmt.Printf("%*s", firstDiffColumnWidth, "")
+			}
+		}
+
+		if config.nowDiff {
+			fmt.Printf("%*s", nowDiffColumnWidth, now.Sub(lineTime.date).String())
 		}
 
 		fmt.Printf("\n")
@@ -610,13 +640,6 @@ func printNameAndDates(timestamps []nameAndDate) {
 	}
 
 	if prevLineTimeExists {
-		now := time.Now().UTC()
-		nowString := now.Format(layoutDateTime)
-		now, err := time.Parse(layoutDateTime, nowString)
-		if err != nil {
-			fmt.Println(err)
-		}
-		now = inTimezone(now)
 		fmt.Printf("%*s", column1WidthNamed, "")
 		fmt.Printf("%-*s", timestampColumnWidth, "Now")
 		fmt.Printf("%*s", prevColumnWidth, now.Sub(prevLineTime.date).String())
