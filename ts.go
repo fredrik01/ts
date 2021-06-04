@@ -42,15 +42,16 @@ var config = tsConfig{
 	nowDiff:   false,
 }
 
-var usage = `Usage: ts [command] [flags] [argument]
+var usage = `Usage: ts [command] [flags] [arguments]
 
   Commands:
     add		Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
 
     show	Show default stopwatch timestamps or a named one (ts show mystopwatch)
     		-all		Print all stopwatches
-    		-first-diff	Show "since first" column
-    		-now-diff	Show "since now" column, diffs against current time
+    		-diff-prev	Diff all rows against previous row in the list
+    		-diff-first	Diff all rows against first row
+    		-diff-now	Diff all rows against current time
     		-combine	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show -combine mystop)
     		-combine-exact	Use exact matching for additional arguments when combining
 
@@ -78,9 +79,9 @@ func main() {
 
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
 	showAllFlag := showCmd.Bool("all", false, "all")
-	showPrevDiffFlag := showCmd.Bool("prev-diff", false, "prev-diff")
-	showFirstDiffFlag := showCmd.Bool("first-diff", false, "first-diff")
-	showNowDiffFlag := showCmd.Bool("now-diff", false, "now-diff")
+	showPrevDiffFlag := showCmd.Bool("diff-prev", false, "Diff all rows against previous row in the list")
+	showFirstDiffFlag := showCmd.Bool("diff-first", false, "Diff all rows against first row")
+	showNowDiffFlag := showCmd.Bool("diff-now", false, "Diff all rows against current time")
 	showCombineFlag := showCmd.Bool("combine", false, "combine")
 	showCombineExactFlag := showCmd.Bool("combine-exact", false, "combine-exact")
 
