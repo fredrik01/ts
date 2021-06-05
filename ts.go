@@ -4,19 +4,19 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/fredrik01/ts/src/storage"
+	"github.com/fredrik01/ts/src/timezone"
 )
 
 const (
-	version              = "0.7.0"
-	storageFolder        = ".config/ts"
-	timezoneFilename     = "tz"
+	version              = "0.8.1"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	minNameColumnWidth   = 6
 	timestampColumnWidth = 19
@@ -100,7 +100,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupStorage()
+	storage.SetupStorage()
 
 	switch os.Args[1] {
 	case "add":
@@ -140,9 +140,9 @@ func main() {
 	case "timezone":
 		timezoneCmd.Parse(os.Args[2:])
 		if *timezoneResetFlag {
-			deleteTimezoneFileIfExists()
+			timezone.DeleteTimezoneFileIfExists()
 		} else {
-			setTimezone(timezoneCmd.Arg(0))
+			timezone.SetTimezone(timezoneCmd.Arg(0))
 		}
 	case "version":
 		fmt.Println(version)
@@ -167,12 +167,12 @@ func add(name string) {
 	fmt.Printf(name)
 	fmt.Printf(": ")
 	t := time.Now().UTC()
-	fmt.Println(inTimezone(t).Format(layoutDateTime))
-	appendToFile(getFilePath(name), t.Format(layoutDateTime))
+	fmt.Println(timezone.InTimezone(t).Format(layoutDateTime))
+	appendToFile(storage.GetFilePath(name), t.Format(layoutDateTime))
 }
 
 func show(name string) {
-	filePath := getFilePath(name)
+	filePath := storage.GetFilePath(name)
 	if _, err := os.Stat(filePath); err == nil {
 		printHeaders()
 		timestamps := readFile(filePath)
@@ -184,7 +184,7 @@ func show(name string) {
 
 func combine(arguments []string, exactMatch bool) {
 	var allTimestamps []nameAndDate
-	for _, filename := range getTimestampFiles() {
+	for _, filename := range timezone.GetTimestampFiles() {
 		name := getNameFromFilename(filename)
 		if len(arguments) > 0 {
 			if exactMatch && !containsExact(arguments, name) {
@@ -193,7 +193,7 @@ func combine(arguments []string, exactMatch bool) {
 				continue
 			}
 		}
-		filePath := getFilePathForFilename(filename)
+		filePath := storage.GetFilePathForFilename(filename)
 		timestamps := readFile(filePath)
 		nameAndDates := convertToNameAndDateSlice(name, timestamps)
 		allTimestamps = append(allTimestamps, nameAndDates...)
@@ -206,7 +206,7 @@ func combine(arguments []string, exactMatch bool) {
 }
 
 func all() {
-	for _, filename := range getTimestampFiles() {
+	for _, filename := range timezone.GetTimestampFiles() {
 		name := getNameFromFilename(filename)
 		fmt.Println(name)
 		fmt.Println("-------------------")
@@ -216,7 +216,7 @@ func all() {
 }
 
 func reset(name string) {
-	filename := getFilePath(name)
+	filename := storage.GetFilePath(name)
 	if _, err := os.Stat(filename); err == nil {
 		fmt.Printf("Reset ")
 		fmt.Printf(name)
@@ -238,13 +238,13 @@ func reset(name string) {
 }
 
 func rename(oldName string, newName string) {
-	oldPath := getFilePath(oldName)
+	oldPath := storage.GetFilePath(oldName)
 	if !fileExists(oldPath) {
 		fmt.Println("This stopwatch does not exist")
 		return
 	}
 
-	newPath := getFilePath(newName)
+	newPath := storage.GetFilePath(newName)
 	if fileExists(newPath) {
 		fmt.Println("This stopwatch already exists")
 		return
@@ -255,7 +255,7 @@ func rename(oldName string, newName string) {
 }
 
 func edit(name string) {
-	path := getFilePath(name)
+	path := storage.GetFilePath(name)
 	cmd := exec.Command(os.Getenv("EDITOR"), path)
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
@@ -268,9 +268,9 @@ func resetAll() {
 	ok := askForConfirmation()
 
 	if ok {
-		for _, filename := range getTimestampFiles() {
+		for _, filename := range timezone.GetTimestampFiles() {
 			if strings.Contains(filename, ".timestamps-") {
-				path := getFilePathForFilename(filename)
+				path := storage.GetFilePathForFilename(filename)
 				e := os.Remove(path)
 				if e != nil {
 					log.Fatal(e)
@@ -284,7 +284,7 @@ func resetAll() {
 }
 
 func list() {
-	for _, filename := range getTimestampFiles() {
+	for _, filename := range timezone.GetTimestampFiles() {
 		if strings.Contains(filename, ".timestamps-") {
 			fmt.Println(getNameFromFilename(filename))
 		}
@@ -311,94 +311,11 @@ func contains(values []string, str string) bool {
 	return false
 }
 
-func setupStorage() {
-	storagePath := getStoragePath()
-	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
-		os.Mkdir(storagePath, 0700)
-	}
-}
-
-func getStoragePath() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		log.Fatal(err)
-	}
-	var storage strings.Builder
-	storage.WriteString(home)
-	storage.WriteString("/")
-	storage.WriteString(storageFolder)
-	return storage.String()
-}
-
-func getStoragePathForFile(filename string) string {
-	var sb strings.Builder
-	sb.WriteString(getStoragePath())
-	sb.WriteString("/")
-	sb.WriteString(filename)
-	return sb.String()
-}
-
-func readLocation() string {
-	file := getStoragePathForFile(timezoneFilename)
-	content, err := ioutil.ReadFile(file)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return string(content)
-}
-
-func inTimezone(timestamp time.Time) time.Time {
-	if timezoneFileExists() {
-		location, _ := time.LoadLocation(readLocation())
-		return timestamp.In(location)
-	}
-	return timestamp.Local()
-}
-
 func fileExists(path string) bool {
 	if _, err := os.Stat(path); err == nil {
 		return true
 	}
 	return false
-}
-
-func timezoneFileExists() bool {
-	file := getTimezoneFilePath()
-	if _, err := os.Stat(file); err == nil {
-		return true
-	}
-	return false
-}
-
-func getTimezoneFilePath() string {
-	return getStoragePathForFile(timezoneFilename)
-}
-
-func deleteTimezoneFileIfExists() {
-	file := getTimezoneFilePath()
-
-	if _, err := os.Stat(file); err == nil {
-		e := os.Remove(file)
-		if e != nil {
-			log.Fatal(e)
-		}
-	}
-}
-
-func setTimezone(location string) {
-	// Remove old file
-	deleteTimezoneFileIfExists()
-
-	// Create location file
-	file := getTimezoneFilePath()
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if _, err := f.Write([]byte(location)); err != nil {
-		f.Close() // ignore error; Write error takes precedence
-		log.Fatal(err)
-	}
 }
 
 func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDate {
@@ -411,22 +328,6 @@ func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDat
 
 func getNameFromFilename(filename string) string {
 	return filename[12:]
-}
-
-func getTimestampFiles() []string {
-	files, err := ioutil.ReadDir(getStoragePath())
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	var timestampFiles []string
-	for _, file := range files {
-		filename := file.Name()
-		if strings.Contains(filename, ".timestamps-") {
-			timestampFiles = append(timestampFiles, filename)
-		}
-	}
-	return timestampFiles
 }
 
 func askForConfirmation() bool {
@@ -443,23 +344,6 @@ func askForConfirmation() bool {
 	default:
 		return false
 	}
-}
-
-func getFilePathForFilename(filename string) string {
-	var sb strings.Builder
-	sb.WriteString(getStoragePath())
-	sb.WriteString("/")
-	sb.WriteString(filename)
-	return sb.String()
-}
-
-func getFilePath(name string) string {
-	var sb strings.Builder
-	sb.WriteString(getStoragePath())
-	sb.WriteString("/")
-	sb.WriteString(".timestamps-")
-	sb.WriteString(name)
-	return sb.String()
 }
 
 func appendToFile(file string, data string) {
@@ -571,10 +455,10 @@ func printTimestamps(timestamps []time.Time) {
 	prevLineTimeExists := false
 	prevLineTime := time.Now()
 	firstLineTime := time.Now()
-	now := inTimezone(nowTime())
+	now := timezone.InTimezone(nowTime())
 
 	for _, lineTime := range timestamps {
-		lineTime = inTimezone(lineTime)
+		lineTime = timezone.InTimezone(lineTime)
 		dateString := lineTime.Format(layoutDateTime)
 		fmt.Printf("%*s", timestampColumnWidth, dateString)
 
@@ -623,10 +507,10 @@ func printNameAndDates(timestamps []nameAndDate) {
 	prevLineTimeExists := false
 	var prevLineTime nameAndDate
 	var firstLineTime nameAndDate
-	now := inTimezone(nowTime())
+	now := timezone.InTimezone(nowTime())
 
 	for _, lineTime := range timestamps {
-		lineTime.date = inTimezone(lineTime.date)
+		lineTime.date = timezone.InTimezone(lineTime.date)
 		dateString := lineTime.date.Format(layoutDateTime)
 		fmt.Printf("%-*s", column1WidthNamed, lineTime.name)
 		fmt.Printf("%*s", timestampColumnWidth, dateString)
