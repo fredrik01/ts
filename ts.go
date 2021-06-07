@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	version              = "0.8.1"
+	version              = "0.8.3"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	minNameColumnWidth   = 6
 	timestampColumnWidth = 19
