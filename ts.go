@@ -20,9 +20,14 @@ const (
 	layoutDateTime       = "2006-01-02 15:04:05"
 	minNameColumnWidth   = 6
 	timestampColumnWidth = 19
-	prevColumnWidth      = 12
-	firstDiffColumnWidth = 13
+	prevDiffColumnWidth  = 11
+	firstDiffColumnWidth = 11
 	nowDiffColumnWidth   = 11
+	nameHeader           = "Name"
+	timestampHeader      = "Timestamp"
+	prevDiffHeader       = "D.prev"
+	firstDiffHeader      = "D.first"
+	nowDiffHeader        = "D.now"
 )
 
 type nameAndDate struct {
@@ -377,31 +382,31 @@ func appendToFile(file string, data string) {
 
 // TODO: Merge this and printHeadersNamed
 func printHeaders() {
-	fmt.Printf("%-*s", timestampColumnWidth, "Timestamp")
+	fmt.Printf("%-*s", timestampColumnWidth, timestampHeader)
 	if config.prevDiff {
-		fmt.Printf("%*s", prevColumnWidth, "Since prev")
+		fmt.Printf("%*s", prevDiffColumnWidth, prevDiffHeader)
 	}
 	if config.firstDiff {
-		fmt.Printf("%*s", firstDiffColumnWidth, "Since first")
+		fmt.Printf("%*s", firstDiffColumnWidth, firstDiffHeader)
 	}
 	if config.nowDiff {
-		fmt.Printf("%*s", nowDiffColumnWidth, "Since now")
+		fmt.Printf("%*s", nowDiffColumnWidth, nowDiffHeader)
 	}
 	fmt.Println()
 }
 
 func printHeadersNamed(timestamps []nameAndDate) {
 	column1WidthNamed := getNameColumnLength(timestamps)
-	fmt.Printf("%-*s", column1WidthNamed, "Name")
-	fmt.Printf("%-*s", timestampColumnWidth, "Timestamp")
+	fmt.Printf("%-*s", column1WidthNamed, nameHeader)
+	fmt.Printf("%-*s", timestampColumnWidth, timestampHeader)
 	if config.prevDiff {
-		fmt.Printf("%*s", prevColumnWidth, "Since prev")
+		fmt.Printf("%*s", prevDiffColumnWidth, prevDiffHeader)
 	}
 	if config.firstDiff {
-		fmt.Printf("%*s", firstDiffColumnWidth, "Since first")
+		fmt.Printf("%*s", firstDiffColumnWidth, firstDiffHeader)
 	}
 	if config.nowDiff {
-		fmt.Printf("%*s", nowDiffColumnWidth, "Since now")
+		fmt.Printf("%*s", nowDiffColumnWidth, nowDiffHeader)
 	}
 	fmt.Println()
 }
@@ -476,7 +481,7 @@ func printTimestamps(timestamps []time.Time) {
 		if prevLineTimeExists {
 			diffSincePrev := lineTime.Sub(prevLineTime)
 			if config.prevDiff {
-				fmt.Printf("%*s", prevColumnWidth, diffSincePrev.String())
+				fmt.Printf("%*s", prevDiffColumnWidth, diffSincePrev.String())
 			}
 			if config.firstDiff {
 				fmt.Printf("%*s", firstDiffColumnWidth, lineTime.Sub(firstLineTime).String())
@@ -484,7 +489,7 @@ func printTimestamps(timestamps []time.Time) {
 		} else {
 			firstLineTime = lineTime
 			if config.prevDiff {
-				fmt.Printf("%*s", prevColumnWidth, "")
+				fmt.Printf("%*s", prevDiffColumnWidth, "")
 			}
 			if config.firstDiff {
 				fmt.Printf("%*s", firstDiffColumnWidth, "")
@@ -505,7 +510,7 @@ func printTimestamps(timestamps []time.Time) {
 		if config.prevDiff || config.firstDiff {
 			fmt.Printf("%-*s", timestampColumnWidth, "Now")
 			if config.prevDiff {
-				fmt.Printf("%*s", prevColumnWidth, now.Sub(prevLineTime).String())
+				fmt.Printf("%*s", prevDiffColumnWidth, now.Sub(prevLineTime).String())
 			}
 			if config.firstDiff {
 				fmt.Printf("%*s", firstDiffColumnWidth, now.Sub(firstLineTime).String())
@@ -532,7 +537,7 @@ func printNameAndDates(timestamps []nameAndDate) {
 		if prevLineTimeExists {
 			diffSincePrev := lineTime.date.Sub(prevLineTime.date)
 			if config.prevDiff {
-				fmt.Printf("%*s", prevColumnWidth, diffSincePrev.String())
+				fmt.Printf("%*s", prevDiffColumnWidth, diffSincePrev.String())
 			}
 			if config.firstDiff {
 				fmt.Printf("%*s", firstDiffColumnWidth, lineTime.date.Sub(firstLineTime.date).String())
@@ -540,7 +545,7 @@ func printNameAndDates(timestamps []nameAndDate) {
 		} else {
 			firstLineTime = lineTime
 			if config.prevDiff {
-				fmt.Printf("%*s", prevColumnWidth, "")
+				fmt.Printf("%*s", prevDiffColumnWidth, "")
 			}
 			if config.firstDiff {
 				fmt.Printf("%*s", firstDiffColumnWidth, "")
@@ -562,7 +567,7 @@ func printNameAndDates(timestamps []nameAndDate) {
 			fmt.Printf("%*s", column1WidthNamed, "")
 			fmt.Printf("%-*s", timestampColumnWidth, "Now")
 			if config.prevDiff {
-				fmt.Printf("%*s", prevColumnWidth, now.Sub(prevLineTime.date).String())
+				fmt.Printf("%*s", prevDiffColumnWidth, now.Sub(prevLineTime.date).String())
 			}
 			if config.firstDiff {
 				fmt.Printf("%*s", firstDiffColumnWidth, now.Sub(firstLineTime.date).String())
