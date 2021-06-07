@@ -78,7 +78,7 @@ func main() {
 	addCmd := flag.NewFlagSet("add", flag.ExitOnError)
 
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
-	showAllFlag := showCmd.Bool("all", false, "all")
+	showAllFlag := showCmd.Bool("all", false, "Show all")
 	showPrevDiffFlag := showCmd.Bool("diff-prev", false, "Diff all rows against previous row in the list")
 	showFirstDiffFlag := showCmd.Bool("diff-first", false, "Diff all rows against first row")
 	showNowDiffFlag := showCmd.Bool("diff-now", false, "Diff all rows against current time")
@@ -485,6 +485,9 @@ func printTimestamps(timestamps []time.Time) {
 			firstLineTime = lineTime
 			if config.prevDiff {
 				fmt.Printf("%*s", prevColumnWidth, "")
+			}
+			if config.firstDiff {
+				fmt.Printf("%*s", firstDiffColumnWidth, "")
 			}
 		}
 
