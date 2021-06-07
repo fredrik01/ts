@@ -318,6 +318,16 @@ func fileExists(path string) bool {
 	return false
 }
 
+func remove(name string) {
+	path := storage.GetFilePath(name)
+	if _, err := os.Stat(path); err == nil {
+		e := os.Remove(path)
+		if e != nil {
+			log.Fatal(e)
+		}
+	}
+}
+
 func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDate {
 	var nameAndDates []nameAndDate
 	for _, dateTime := range timestamps {
