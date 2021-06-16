@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	version              = "0.9.0"
+	version              = "0.9.1"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	minNameColumnWidth   = 6
 	timestampColumnWidth = 19
@@ -50,28 +50,33 @@ var config = tsConfig{
 var usage = `Usage: ts [command] [flags] [arguments]
 
   Commands:
-    add		Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
+    add            Add timestamp to default stopwatch or to a named one
+                   (ts save mystopwatch)
 
-    show	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show mystopwatch)
-    		-split		Print all stopwatches separately
-    		-diff-prev	Diff all rows against previous row in the list
-    		-diff-first	Diff all rows against first row
-    		-diff-now	Diff all rows against current time
-    		-exact	Use exact matching for additional arguments
+    show           Show all or some stopwatches in a sorted list.
+                   Additional arguments can be used to only keep some
+                   stopwatches in the list (ts show mystopwatch)
+      -split       Print all stopwatches separately
+      -diff-prev   Diff all rows against previous row in the list
+      -diff-first  Diff all rows against first row
+      -diff-now    Diff all rows against current time
+      -exact       Use exact matching for additional arguments
 
-    reset	Reset default stopwatch or a named one (ts reset mystopwatch)
-    		-all		Reset all stopwatches
+    reset          Reset default stopwatch or a named one
+      -all         Reset all stopwatches
 
-    rename	Rename a stopwatch (ts rename oldname newname)
+    rename         Rename a stopwatch (ts rename oldname newname)
 
-    edit	Edit save file in your $EDITOR. Timestamps are stored in UTC.
+    edit           Edit save file in your $EDITOR. Timestamps are
+                   stored in UTC.
 
-    list	List stopwatches
+    list           List stopwatches
 
-    timezone	Set timezone (ts timezone "America/New_York")
-    		-reset		Reset previous timezone settings and use the local timezone
+    timezone       Set timezone (ts timezone "America/New_York")
+      -reset       Reset previous timezone settings and use the local
+                   timezone
 
-    version	Print version
+    version        Print version
 `
 
 func main() {
