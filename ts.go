@@ -53,7 +53,7 @@ var usage = `Usage: ts [command] [flags] [arguments]
     add		Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
 
     show	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show mystopwatch)
-    		-all		Print all stopwatches
+    		-split		Print all stopwatches separately
     		-diff-prev	Diff all rows against previous row in the list
     		-diff-first	Diff all rows against first row
     		-diff-now	Diff all rows against current time
@@ -64,7 +64,7 @@ var usage = `Usage: ts [command] [flags] [arguments]
 
     rename	Rename a stopwatch (ts rename oldname newname)
 
-    edit	Edit a stopwatch using the editor in your $EDITOR environment variable. Timestamps are stored in UTC.
+    edit	Edit save file in your $EDITOR. Timestamps are stored in UTC.
 
     list	List stopwatches
 
