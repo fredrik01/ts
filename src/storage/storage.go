@@ -11,10 +11,26 @@ const (
 )
 
 func SetupStorage() {
-	storagePath := GetStoragePath()
-	if _, err := os.Stat(storagePath); os.IsNotExist(err) {
-		os.Mkdir(storagePath, 0700)
+	saveFilePath := GetStoragePath()
+	if !FileExist(saveFilePath) {
+		os.Mkdir(saveFilePath, 0700)
 	}
+}
+
+func FileExist(path string) bool {
+	if _, err := os.Stat(path); err == nil {
+		return true
+	} else {
+		return false
+	}
+}
+
+func GetSaveFilePath() string {
+	var sb strings.Builder
+	sb.WriteString(GetStoragePath())
+	sb.WriteString("/")
+	sb.WriteString("timestamps.csv")
+	return sb.String()
 }
 
 func GetStoragePath() string {
@@ -29,27 +45,17 @@ func GetStoragePath() string {
 	return storage.String()
 }
 
+func Delete(path string) {
+	e := os.Remove(path)
+	if e != nil {
+		log.Fatal(e)
+	}
+}
+
 func GetStoragePathForFile(filename string) string {
 	var sb strings.Builder
 	sb.WriteString(GetStoragePath())
 	sb.WriteString("/")
 	sb.WriteString(filename)
-	return sb.String()
-}
-
-func GetFilePathForFilename(filename string) string {
-	var sb strings.Builder
-	sb.WriteString(GetStoragePath())
-	sb.WriteString("/")
-	sb.WriteString(filename)
-	return sb.String()
-}
-
-func GetFilePath(name string) string {
-	var sb strings.Builder
-	sb.WriteString(GetStoragePath())
-	sb.WriteString("/")
-	sb.WriteString(".timestamps-")
-	sb.WriteString(name)
 	return sb.String()
 }

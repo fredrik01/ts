@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"log"
@@ -11,12 +10,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fredrik01/ts/src/csv"
 	"github.com/fredrik01/ts/src/storage"
 	"github.com/fredrik01/ts/src/timezone"
 )
 
 const (
-	version              = "0.8.3"
+	version              = "0.9.0"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	minNameColumnWidth   = 6
 	timestampColumnWidth = 19
@@ -30,9 +30,9 @@ const (
 	nowDiffHeader        = "D.now"
 )
 
-type nameAndDate struct {
-	name string
-	date time.Time
+type record struct {
+	name      string
+	timestamp time.Time
 }
 
 type tsConfig struct {
@@ -52,13 +52,12 @@ var usage = `Usage: ts [command] [flags] [arguments]
   Commands:
     add		Add timestamp to default stopwatch or to a named one (ts save mystopwatch)
 
-    show	Show default stopwatch timestamps or a named one (ts show mystopwatch)
+    show	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show mystopwatch)
     		-all		Print all stopwatches
     		-diff-prev	Diff all rows against previous row in the list
     		-diff-first	Diff all rows against first row
     		-diff-now	Diff all rows against current time
-    		-combine	Show all or some stopwatches in a sorted list. Additional arguments can be used to only keep some stopwatches in the list (ts show -combine mystop)
-    		-combine-exact	Use exact matching for additional arguments when combining
+    		-exact	Use exact matching for additional arguments
 
     reset	Reset default stopwatch or a named one (ts reset mystopwatch)
     		-all		Reset all stopwatches
@@ -83,19 +82,16 @@ func main() {
 	addCmd := flag.NewFlagSet("add", flag.ExitOnError)
 
 	showCmd := flag.NewFlagSet("show", flag.ExitOnError)
-	showAllFlag := showCmd.Bool("all", false, "Show all")
+	showSplitCmd := showCmd.Bool("split", false, "Split by name")
 	showPrevDiffFlag := showCmd.Bool("diff-prev", false, "Diff all rows against previous row in the list")
 	showFirstDiffFlag := showCmd.Bool("diff-first", false, "Diff all rows against first row")
 	showNowDiffFlag := showCmd.Bool("diff-now", false, "Diff all rows against current time")
-	showCombineFlag := showCmd.Bool("combine", false, "combine")
-	showCombineExactFlag := showCmd.Bool("combine-exact", false, "combine-exact")
+	showExactFlag := showCmd.Bool("exact", false, "exact")
 
 	resetCmd := flag.NewFlagSet("reset", flag.ExitOnError)
 	resetAllFlag := resetCmd.Bool("all", false, "all")
 
 	renameCmd := flag.NewFlagSet("rename", flag.ExitOnError)
-
-	editCmd := flag.NewFlagSet("edit", flag.ExitOnError)
 
 	timezoneCmd := flag.NewFlagSet("timezone", flag.ExitOnError)
 	timezoneResetFlag := timezoneCmd.Bool("reset", false, "reset")
@@ -118,14 +114,16 @@ func main() {
 		config.firstDiff = *showFirstDiffFlag
 		config.nowDiff = *showNowDiffFlag
 
-		if *showAllFlag {
-			all()
-		} else if *showCombineExactFlag {
-			combine(showCmd.Args(), true)
-		} else if *showCombineFlag {
-			combine(showCmd.Args(), false)
+		if *showSplitCmd {
+			split()
+		} else if *showExactFlag {
+			records := getRecords()
+			records = keepMatchingRecords(records, showCmd.Args(), true)
+			show(records)
 		} else {
-			show(nameOrDefault(showCmd.Arg(0)))
+			records := getRecords()
+			records = keepMatchingRecords(records, showCmd.Args(), false)
+			show(records)
 		}
 	case "reset":
 		resetCmd.Parse(os.Args[2:])
@@ -140,8 +138,7 @@ func main() {
 		renameCmd.Parse(os.Args[2:])
 		rename(renameCmd.Arg(0), renameCmd.Arg(1))
 	case "edit":
-		editCmd.Parse(os.Args[2:])
-		edit(nameOrDefault(editCmd.Arg(0)))
+		edit()
 	case "timezone":
 		timezoneCmd.Parse(os.Args[2:])
 		if *timezoneResetFlag {
@@ -165,102 +162,165 @@ func nameOrDefault(name string) string {
 	return name
 }
 
-// Commands
-
 func add(name string) {
 	fmt.Println("Timestamp added")
 	fmt.Printf(name)
 	fmt.Printf(": ")
 	t := time.Now().UTC()
 	fmt.Println(timezone.InTimezone(t).Format(layoutDateTime))
-	appendToFile(storage.GetFilePath(name), t.Format(layoutDateTime))
+	records := []record{{timestamp: t, name: name}}
+	saveRecords(records)
 }
 
-func show(name string) {
-	filePath := storage.GetFilePath(name)
-	if _, err := os.Stat(filePath); err == nil {
-		printHeaders()
-		timestamps := readFile(filePath)
-		printTimestamps(timestamps)
-	} else {
-		fmt.Println("This stopwatch is not running")
+func saveRecords(records []record) {
+	for _, record := range records {
+		newLine := []string{record.timestamp.Format(layoutDateTime), record.name}
+		csv.AppendToFile(storage.GetSaveFilePath(), newLine)
 	}
 }
 
-func combine(arguments []string, exactMatch bool) {
-	var allTimestamps []nameAndDate
-	for _, filename := range timezone.GetTimestampFiles() {
-		name := getNameFromFilename(filename)
-		if len(arguments) > 0 {
-			if exactMatch && !containsExact(arguments, name) {
-				continue
-			} else if !exactMatch && !contains(arguments, name) {
-				continue
+func getRecords() []record {
+	saveFile := storage.GetSaveFilePath()
+	if storage.FileExist(saveFile) {
+		lines := csv.Read(saveFile)
+		return convertToRecordSlice(lines)
+	}
+	return []record{}
+}
+
+func getUniqueNames(records []record) []string {
+	var uniqueNames []string
+	unique := make(map[string]bool)
+	for _, record := range records {
+		if !unique[record.name] {
+			unique[record.name] = true
+			uniqueNames = append(uniqueNames, record.name)
+		}
+	}
+	return uniqueNames
+}
+
+func nameExists(records []record, name string) bool {
+	exists := false
+	for _, record := range records {
+		if record.name == name {
+			exists = true
+			break
+		}
+	}
+	return exists
+}
+
+func keepMatchingRecords(records []record, arguments []string, exactMatch bool) []record {
+	if len(arguments) > 0 {
+		var filtered []record
+		for _, record := range records {
+			if exactMatch && containsExact(arguments, record.name) {
+				filtered = append(filtered, record)
+			} else if !exactMatch && contains(arguments, record.name) {
+				filtered = append(filtered, record)
 			}
 		}
-		filePath := storage.GetFilePathForFilename(filename)
-		timestamps := readFile(filePath)
-		nameAndDates := convertToNameAndDateSlice(name, timestamps)
-		allTimestamps = append(allTimestamps, nameAndDates...)
+		records = filtered
 	}
-	sort.Slice(allTimestamps, func(i, j int) bool {
-		return allTimestamps[i].date.Before(allTimestamps[j].date)
-	})
-	printHeadersNamed(allTimestamps)
-	printNameAndDates(allTimestamps)
+	return records
 }
 
-func all() {
-	for _, filename := range timezone.GetTimestampFiles() {
-		name := getNameFromFilename(filename)
-		fmt.Println(name)
-		fmt.Println("-------------------")
-		show(name)
+func removeMatchingRecords(records []record, arguments []string, exactMatch bool) []record {
+	if len(arguments) > 0 {
+		var filtered []record
+		for _, record := range records {
+			if exactMatch && !containsExact(arguments, record.name) {
+				filtered = append(filtered, record)
+			} else if !exactMatch && !contains(arguments, record.name) {
+				filtered = append(filtered, record)
+			}
+		}
+		records = filtered
+	}
+	return records
+}
+
+func show(records []record) {
+	if len(records) == 0 {
+		fmt.Println("No records found")
+	} else {
+		sort.Slice(records, func(i, j int) bool {
+			return records[i].timestamp.Before(records[j].timestamp)
+		})
+		printHeaders(records)
+		printRecords(records)
+	}
+}
+
+func split() {
+	allRecords := getRecords()
+	names := getUniqueNames(allRecords)
+	for _, name := range names {
+		records := keepMatchingRecords(allRecords, []string{name}, true)
+		show(records)
 		fmt.Println()
 	}
 }
 
 func reset(name string) {
-	filename := storage.GetFilePath(name)
-	if _, err := os.Stat(filename); err == nil {
-		fmt.Printf("Reset ")
+	records := getRecords()
+	if !nameExists(records, name) {
+		fmt.Printf("Name \"")
 		fmt.Printf(name)
-		fmt.Printf("? (y/n) ")
-		ok := askForConfirmation()
+		fmt.Printf("\" was not found\n")
+		os.Exit(0)
+	}
 
-		if ok {
-			e := os.Remove(filename)
-			if e != nil {
-				log.Fatal(e)
-			}
-			fmt.Println("Done")
-		} else {
-			fmt.Println("Aborted")
-		}
+	fmt.Printf("Reset ")
+	fmt.Printf(name)
+	fmt.Printf("? (y/n) ")
+	ok := askForConfirmation()
+
+	if ok {
+		// Get records to keep
+		recordsToKeep := removeMatchingRecords(records, []string{name}, true)
+		// Remove save file
+		storage.Delete(storage.GetSaveFilePath())
+		// Create new save file with records to keep
+		saveRecords(recordsToKeep)
+		fmt.Println("Done")
 	} else {
-		fmt.Println("This stopwatch is not running")
+		fmt.Println("Aborted")
 	}
 }
 
 func rename(oldName string, newName string) {
-	oldPath := storage.GetFilePath(oldName)
-	if !fileExists(oldPath) {
-		fmt.Println("This stopwatch does not exist")
-		return
+	records := getRecords()
+
+	// Check old name
+	if !nameExists(records, oldName) {
+		fmt.Printf(oldName)
+		fmt.Printf(" does not exist\n")
+		os.Exit(0)
 	}
 
-	newPath := storage.GetFilePath(newName)
-	if fileExists(newPath) {
-		fmt.Println("This stopwatch already exists")
-		return
+	// Check new name
+	if nameExists(records, newName) {
+		fmt.Printf(newName)
+		fmt.Printf(" already exists\n")
+		os.Exit(0)
 	}
 
-	os.Rename(oldPath, newPath)
+	for i, record := range records {
+		if record.name == oldName {
+			records[i].name = newName
+		}
+	}
+
+	storage.Delete(storage.GetSaveFilePath())
+	saveRecords(records)
+
 	fmt.Println("Done")
 }
 
-func edit(name string) {
-	path := storage.GetFilePath(name)
+func edit() {
+	path := storage.GetSaveFilePath()
 	cmd := exec.Command(os.Getenv("EDITOR"), path)
 	cmd.Stdout = os.Stdout
 	cmd.Stdin = os.Stdin
@@ -273,15 +333,7 @@ func resetAll() {
 	ok := askForConfirmation()
 
 	if ok {
-		for _, filename := range timezone.GetTimestampFiles() {
-			if strings.Contains(filename, ".timestamps-") {
-				path := storage.GetFilePathForFilename(filename)
-				e := os.Remove(path)
-				if e != nil {
-					log.Fatal(e)
-				}
-			}
-		}
+		storage.Delete(storage.GetSaveFilePath())
 		fmt.Println("Done")
 	} else {
 		fmt.Println("Aborted")
@@ -289,14 +341,11 @@ func resetAll() {
 }
 
 func list() {
-	for _, filename := range timezone.GetTimestampFiles() {
-		if strings.Contains(filename, ".timestamps-") {
-			fmt.Println(getNameFromFilename(filename))
-		}
+	names := getUniqueNames(getRecords())
+	for _, name := range names {
+		fmt.Println(name)
 	}
 }
-
-// Helper functions
 
 func containsExact(values []string, str string) bool {
 	for _, value := range values {
@@ -316,33 +365,16 @@ func contains(values []string, str string) bool {
 	return false
 }
 
-func fileExists(path string) bool {
-	if _, err := os.Stat(path); err == nil {
-		return true
-	}
-	return false
-}
-
-func remove(name string) {
-	path := storage.GetFilePath(name)
-	if _, err := os.Stat(path); err == nil {
-		e := os.Remove(path)
-		if e != nil {
-			log.Fatal(e)
+func convertToRecordSlice(lines [][]string) []record {
+	var records []record
+	for _, line := range lines {
+		timestamp, err := time.Parse(layoutDateTime, line[0])
+		if err != nil {
+			fmt.Println(err)
 		}
+		records = append(records, record{timestamp: timestamp, name: line[1]})
 	}
-}
-
-func convertToNameAndDateSlice(name string, timestamps []time.Time) []nameAndDate {
-	var nameAndDates []nameAndDate
-	for _, dateTime := range timestamps {
-		nameAndDates = append(nameAndDates, nameAndDate{name: name, date: dateTime})
-	}
-	return nameAndDates
-}
-
-func getNameFromFilename(filename string) string {
-	return filename[12:]
+	return records
 }
 
 func askForConfirmation() bool {
@@ -361,41 +393,7 @@ func askForConfirmation() bool {
 	}
 }
 
-func appendToFile(file string, data string) {
-	// https://golang.org/pkg/os/#example_OpenFile_append
-	// If the file doesn't exist, create it, or append to the file
-	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var sb strings.Builder
-	sb.WriteString(data)
-	sb.WriteString("\n")
-	if _, err := f.Write([]byte(sb.String())); err != nil {
-		f.Close() // ignore error; Write error takes precedence
-		log.Fatal(err)
-	}
-	if err := f.Close(); err != nil {
-		log.Fatal(err)
-	}
-}
-
-// TODO: Merge this and printHeadersNamed
-func printHeaders() {
-	fmt.Printf("%-*s", timestampColumnWidth, timestampHeader)
-	if config.prevDiff {
-		fmt.Printf("%*s", prevDiffColumnWidth, prevDiffHeader)
-	}
-	if config.firstDiff {
-		fmt.Printf("%*s", firstDiffColumnWidth, firstDiffHeader)
-	}
-	if config.nowDiff {
-		fmt.Printf("%*s", nowDiffColumnWidth, nowDiffHeader)
-	}
-	fmt.Println()
-}
-
-func printHeadersNamed(timestamps []nameAndDate) {
+func printHeaders(timestamps []record) {
 	column1WidthNamed := getNameColumnLength(timestamps)
 	fmt.Printf("%-*s", column1WidthNamed, nameHeader)
 	fmt.Printf("%-*s", timestampColumnWidth, timestampHeader)
@@ -411,33 +409,6 @@ func printHeadersNamed(timestamps []nameAndDate) {
 	fmt.Println()
 }
 
-func readFile(filePath string) []time.Time {
-	// https://stackoverflow.com/a/36111861
-	file, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer func() {
-		if err = file.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}()
-
-	scanner := bufio.NewScanner(file)
-	var timestamps []time.Time
-
-	for scanner.Scan() {
-		dateString := scanner.Text()
-		dateTime, err := time.Parse(layoutDateTime, dateString)
-
-		if err != nil {
-			fmt.Println(err)
-		}
-		timestamps = append(timestamps, dateTime)
-	}
-	return timestamps
-}
-
 func nowTime() time.Time {
 	now := time.Now().UTC()
 	nowString := now.Format(layoutDateTime)
@@ -448,17 +419,17 @@ func nowTime() time.Time {
 	return now
 }
 
-func getLengthOfLongestName(timestamps []nameAndDate) int {
+func getLengthOfLongestName(timestamps []record) int {
 	longest := 0
-	for _, timestamp := range timestamps {
-		if len(timestamp.name) > longest {
-			longest = len(timestamp.name)
+	for _, record := range timestamps {
+		if len(record.name) > longest {
+			longest = len(record.name)
 		}
 	}
 	return longest
 }
 
-func getNameColumnLength(timestamps []nameAndDate) int {
+func getNameColumnLength(timestamps []record) int {
 	column1Length := getLengthOfLongestName(timestamps) + 2
 	if minNameColumnWidth > column1Length {
 		column1Length = minNameColumnWidth
@@ -466,81 +437,26 @@ func getNameColumnLength(timestamps []nameAndDate) int {
 	return column1Length
 }
 
-func printTimestamps(timestamps []time.Time) {
-	prevLineTimeExists := false
-	prevLineTime := time.Now()
-	firstLineTime := time.Now()
-	now := timezone.InTimezone(nowTime())
-
-	for _, lineTime := range timestamps {
-		lineTime = timezone.InTimezone(lineTime)
-		dateString := lineTime.Format(layoutDateTime)
-		fmt.Printf("%*s", timestampColumnWidth, dateString)
-
-		// TODO: Rename to isFirst?
-		if prevLineTimeExists {
-			diffSincePrev := lineTime.Sub(prevLineTime)
-			if config.prevDiff {
-				fmt.Printf("%*s", prevDiffColumnWidth, diffSincePrev.String())
-			}
-			if config.firstDiff {
-				fmt.Printf("%*s", firstDiffColumnWidth, lineTime.Sub(firstLineTime).String())
-			}
-		} else {
-			firstLineTime = lineTime
-			if config.prevDiff {
-				fmt.Printf("%*s", prevDiffColumnWidth, "")
-			}
-			if config.firstDiff {
-				fmt.Printf("%*s", firstDiffColumnWidth, "")
-			}
-		}
-
-		if config.nowDiff {
-			fmt.Printf("%*s", nowDiffColumnWidth, now.Sub(lineTime).String())
-		}
-
-		fmt.Printf("\n")
-
-		prevLineTimeExists = true
-		prevLineTime = lineTime
-	}
-
-	if prevLineTimeExists {
-		if config.prevDiff || config.firstDiff {
-			fmt.Printf("%-*s", timestampColumnWidth, "Now")
-			if config.prevDiff {
-				fmt.Printf("%*s", prevDiffColumnWidth, now.Sub(prevLineTime).String())
-			}
-			if config.firstDiff {
-				fmt.Printf("%*s", firstDiffColumnWidth, now.Sub(firstLineTime).String())
-			}
-			fmt.Println()
-		}
-	}
-}
-
-func printNameAndDates(timestamps []nameAndDate) {
+func printRecords(timestamps []record) {
 	column1WidthNamed := getNameColumnLength(timestamps)
 	prevLineTimeExists := false
-	var prevLineTime nameAndDate
-	var firstLineTime nameAndDate
+	var prevLineTime record
+	var firstLineTime record
 	now := timezone.InTimezone(nowTime())
 
 	for _, lineTime := range timestamps {
-		lineTime.date = timezone.InTimezone(lineTime.date)
-		dateString := lineTime.date.Format(layoutDateTime)
+		lineTime.timestamp = timezone.InTimezone(lineTime.timestamp)
+		dateString := lineTime.timestamp.Format(layoutDateTime)
 		fmt.Printf("%-*s", column1WidthNamed, lineTime.name)
 		fmt.Printf("%*s", timestampColumnWidth, dateString)
 
-		// TODO: Rename to isFirst?
 		if prevLineTimeExists {
-			diffSincePrev := lineTime.date.Sub(prevLineTime.date)
+			diffSincePrev := lineTime.timestamp.Sub(prevLineTime.timestamp)
 			if config.prevDiff {
 				fmt.Printf("%*s", prevDiffColumnWidth, diffSincePrev.String())
 			}
 			if config.firstDiff {
-				fmt.Printf("%*s", firstDiffColumnWidth, lineTime.date.Sub(firstLineTime.date).String())
+				fmt.Printf("%*s", firstDiffColumnWidth, lineTime.timestamp.Sub(firstLineTime.timestamp).String())
 			}
 		} else {
 			firstLineTime = lineTime
@@ -553,7 +469,7 @@ func printNameAndDates(timestamps []nameAndDate) {
 		}
 
 		if config.nowDiff {
-			fmt.Printf("%*s", nowDiffColumnWidth, now.Sub(lineTime.date).String())
+			fmt.Printf("%*s", nowDiffColumnWidth, now.Sub(lineTime.timestamp).String())
 		}
 
 		fmt.Printf("\n")
@@ -567,10 +483,10 @@ func printNameAndDates(timestamps []nameAndDate) {
 			fmt.Printf("%*s", column1WidthNamed, "")
 			fmt.Printf("%-*s", timestampColumnWidth, "Now")
 			if config.prevDiff {
-				fmt.Printf("%*s", prevDiffColumnWidth, now.Sub(prevLineTime.date).String())
+				fmt.Printf("%*s", prevDiffColumnWidth, now.Sub(prevLineTime.timestamp).String())
 			}
 			if config.firstDiff {
-				fmt.Printf("%*s", firstDiffColumnWidth, now.Sub(firstLineTime.date).String())
+				fmt.Printf("%*s", firstDiffColumnWidth, now.Sub(firstLineTime.timestamp).String())
 			}
 			fmt.Println()
 		}

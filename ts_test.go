@@ -1,9 +1,9 @@
 package main
 
 func ExampleShow() {
-	remove("mystopwatch")
-	show("mystopwatch")
-	// Output: This stopwatch is not running
+	records := []record{}
+	show(records)
+	// Output: No records found
 }
 
 func ExampleReset() {
