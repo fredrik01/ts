@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	version              = "0.9.1"
+	version              = "0.9.2"
 	layoutDateTime       = "2006-01-02 15:04:05"
 	minNameColumnWidth   = 6
 	timestampColumnWidth = 19
@@ -168,13 +168,12 @@ func nameOrDefault(name string) string {
 }
 
 func add(name string) {
-	fmt.Println("Timestamp added")
-	fmt.Printf(name)
-	fmt.Printf(": ")
 	t := time.Now().UTC()
-	fmt.Println(timezone.InTimezone(t).Format(layoutDateTime))
 	records := []record{{timestamp: t, name: name}}
 	saveRecords(records)
+
+	fmt.Println("Timestamp added")
+	fmt.Println(name + ": " + timezone.InTimezone(t).Format(layoutDateTime))
 }
 
 func saveRecords(records []record) {
@@ -271,15 +270,11 @@ func split() {
 func reset(name string) {
 	records := getRecords()
 	if !nameExists(records, name) {
-		fmt.Printf("Name \"")
-		fmt.Printf(name)
-		fmt.Printf("\" was not found\n")
+		fmt.Println("Name \"" + name + "\" was not found")
 		os.Exit(0)
 	}
 
-	fmt.Printf("Reset ")
-	fmt.Printf(name)
-	fmt.Printf("? (y/n) ")
+	fmt.Printf("Reset " + name + "? (y/n) ")
 	ok := askForConfirmation()
 
 	if ok {
@@ -300,15 +295,7 @@ func rename(oldName string, newName string) {
 
 	// Check old name
 	if !nameExists(records, oldName) {
-		fmt.Printf(oldName)
-		fmt.Printf(" does not exist\n")
-		os.Exit(0)
-	}
-
-	// Check new name
-	if nameExists(records, newName) {
-		fmt.Printf(newName)
-		fmt.Printf(" already exists\n")
+		fmt.Println(oldName + " does not exist")
 		os.Exit(0)
 	}
 
